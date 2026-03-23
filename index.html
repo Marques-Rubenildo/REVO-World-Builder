@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REVO World Builder™ - AR Softworks™</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1a1510;--bg2:#221d16;--bg3:#2a231a;--surface:#2e2720;
+  --border:#5a4a35;--border-light:#7a6448;
+  --gold:#c8a45a;--gold-light:#e8c880;--gold-dim:#8a6e3a;
+  --text:#e8dcc8;--text-dim:#a89878;--text-muted:#6a5840;
+}
+body{font-family:'Crimson Text',Georgia,serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+/* Header */
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+header h1{font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:var(--gold);letter-spacing:1px;white-space:nowrap}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-dim);flex:1;flex-wrap:wrap}
+.breadcrumb .crumb{cursor:pointer;color:var(--gold-dim);transition:color .15s;font-family:'Cinzel',serif;font-size:12px}
+.breadcrumb .crumb:hover{color:var(--gold)}
+.breadcrumb .crumb.active{color:var(--gold);cursor:default}
+.breadcrumb .sep{color:var(--text-muted);font-size:10px}
+.layer-badge{font-family:'Cinzel',serif;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:12px;color:var(--text-dim);background:var(--bg3);white-space:nowrap}
+.layer-badge.l1{border-color:var(--gold-dim);color:var(--gold)}
+.layer-badge.l2{border-color:#4a7ab8;color:#7aaae8}
+.layer-badge.l3{border-color:#4a8848;color:#7ac87a}
+.layer-badge.l4{border-color:#8848a8;color:#c87ae8}
+
+/* Side panel tabs (Terreno / Buildings) */
+#panel-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:8px;flex-shrink:0}
+.panel-tab{flex:1;font-family:'Cinzel',serif;font-size:10px;padding:6px 0;text-align:center;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none}
+.panel-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.panel-tab:hover{color:var(--text-dim)}
+
+#tab-terrain{display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto}
+#tab-buildings{display:none;flex-direction:column;gap:6px;flex:1;overflow-y:auto}
+#tab-buildings.active{display:flex}
+#tab-terrain.active{display:flex}
+
+.building-btn{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;border:1px solid transparent;background:var(--bg3);color:var(--text-dim);cursor:pointer;font-size:12px;font-family:'Crimson Text',serif;transition:all .12s;text-align:left;width:100%}
+.building-btn:hover{border-color:var(--border);color:var(--text)}
+.building-btn.selected{border-color:#8848a8;color:#c87ae8;background:var(--surface)}
+.building-btn.disabled{opacity:.35;cursor:not-allowed}
+.building-btn .bb-icon{width:20px;height:20px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.building-btn .bb-terrains{font-size:9px;color:var(--text-muted);display:block;margin-top:1px}
+
+/* Building badge drawn on hex */
+.bld-tooltip{position:fixed;background:var(--bg2);border:1px solid #8848a8;border-radius:6px;padding:5px 10px;font-size:11px;color:#c87ae8;pointer-events:none;display:none;z-index:200;font-family:'Cinzel',serif;white-space:nowrap}
+
+/* Layer 4 interior panel - reuses terrain-panel styles */
+#layer4-name{font-family:'Cinzel',serif;font-size:13px;color:var(--gold);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.btn-back{font-family:'Cinzel',serif;font-size:12px;padding:4px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-back:hover{border-color:var(--gold-dim);color:var(--gold)}
+.btn-back:disabled{opacity:.3;cursor:default}
+
+
+/* Save Manager Modal */
+#save-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;display:none;align-items:center;justify-content:center}
+#save-modal-bg.open{display:flex}
+#save-modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:620px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+.sm-header{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);gap:12px}
+.sm-header h3{font-family:'Cinzel',serif;font-size:16px;color:var(--gold);flex:1;margin:0}
+.sm-body{flex:1;overflow-y:auto;padding:16px}
+.sm-empty{text-align:center;color:var(--text-muted);font-family:'Cinzel',serif;font-size:13px;padding:40px 0}
+.save-slot{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all .15s;background:var(--bg3)}
+.save-slot:hover{border-color:var(--gold-dim);background:var(--surface)}
+.save-slot .ss-icon{font-size:24px;flex-shrink:0}
+.save-slot .ss-info{flex:1;min-width:0}
+.save-slot .ss-name{font-family:'Cinzel',serif;font-size:13px;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.save-slot .ss-meta{font-size:11px;color:var(--text-muted);margin-top:3px}
+.save-slot .ss-actions{display:flex;gap:6px;flex-shrink:0}
+.ss-btn-load{font-family:'Cinzel',serif;font-size:10px;padding:4px 10px;background:var(--gold-dim);border:none;border-radius:5px;color:#1a1510;cursor:pointer;font-weight:700}
+.ss-btn-load:hover{background:var(--gold)}
+.ss-btn-del{font-family:'Cinzel',serif;font-size:10px;padding:4px 8px;background:transparent;border:1px solid #c84040;border-radius:5px;color:#c84040;cursor:pointer}
+.ss-btn-del:hover{background:#c84040;color:#fff}
+/* Generic input modal (replaces prompt/alert) */
+#input-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9500;display:none;align-items:center;justify-content:center}
+#input-modal-bg.open{display:flex}
+#input-modal{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:24px 28px;width:360px;max-width:92vw}
+#input-modal h3{font-family:'Cinzel',serif;font-size:14px;color:var(--gold);margin-bottom:12px}
+#input-modal input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:'Crimson Text',serif;font-size:15px;color:var(--text);outline:none;margin-bottom:14px}
+#input-modal input:focus{border-color:var(--gold-dim)}
+.im-actions{display:flex;gap:8px;justify-content:flex-end}
+
+.save-slot-current{border-color:var(--gold-dim) !important}
+.ss-ver{font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--gold-dim);width:44px;flex-shrink:0;text-align:center}
+
+
+.sm-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+/* World name input (shown on first save) */
+#world-name-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9001;display:none;align-items:center;justify-content:center}
+#world-name-modal-bg.open{display:flex}
+#world-name-modal{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:28px 32px;width:380px;max-width:95vw}
+#world-name-modal h3{font-family:'Cinzel',serif;font-size:15px;color:var(--gold);margin-bottom:14px}
+#world-name-modal input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-family:'Crimson Text',serif;font-size:15px;color:var(--text);outline:none;margin-bottom:14px}
+#world-name-modal input:focus{border-color:var(--gold-dim)}
+.wn-actions{display:flex;gap:8px;justify-content:flex-end}
+
+/* Save / Load buttons */
+.btn-save{font-family:'Cinzel',serif;font-size:12px;padding:4px 14px;background:var(--gold-dim);border:1px solid var(--gold);border-radius:6px;color:#1a1510;cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:700}
+.btn-save:hover{background:var(--gold);box-shadow:0 0 8px rgba(200,164,90,.4)}
+.btn-save:active{transform:scale(.97)}
+.btn-load{font-family:'Cinzel',serif;font-size:12px;padding:4px 14px;background:transparent;border:1px solid var(--border-light);border-radius:6px;color:var(--text-dim);cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-load:hover{border-color:var(--gold-dim);color:var(--gold)}
+
+/* Save notification toast */
+#save-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--bg2);border:1px solid var(--gold-dim);border-radius:8px;padding:10px 24px;font-family:'Cinzel',serif;font-size:12px;color:var(--gold);z-index:9998;opacity:0;transition:all .3s ease;pointer-events:none;white-space:nowrap}
+#save-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Map container */
+#map-container{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+.map-view{position:absolute;inset:0;display:none}
+.map-view.active{display:flex;align-items:center;justify-content:center}
+#view-hex.active{display:block;position:absolute;inset:0}
+#view-baronies.active{display:flex;flex-direction:column}
+svg.world-map{width:100%;height:100%}
+.region{cursor:pointer;transition:opacity .15s}
+.region:hover{opacity:.8}
+
+/* Tooltip */
+#tooltip{position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:13px;color:var(--text);pointer-events:none;display:none;z-index:100;white-space:nowrap}
+#tooltip .tt-title{font-family:'Cinzel',serif;font-size:12px;color:var(--gold);display:block;margin-bottom:2px}
+#tooltip .tt-sub{font-size:11px;color:var(--text-dim)}
+
+/* World map upload */
+#world-upload-screen{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.upload-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:40px 48px;max-width:520px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
+.upload-icon{font-size:48px}
+.upload-brand{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--gold);letter-spacing:2px;margin-top:4px}
+.upload-version{font-family:'Cinzel',serif;font-size:11px;color:var(--text-muted);letter-spacing:1px;margin-bottom:4px}
+.upload-card h2{font-family:'Cinzel',serif;font-size:20px;color:var(--gold);font-weight:700}
+.upload-card p{font-size:14px;color:var(--text-dim);line-height:1.7}
+.upload-card strong{color:var(--gold-dim)}
+.upload-btn{display:inline-block;font-family:'Cinzel',serif;font-size:13px;padding:10px 24px;background:var(--bg3);border:1px solid var(--border-light);border-radius:8px;color:var(--gold);cursor:pointer;transition:all .15s;margin-top:6px}
+.upload-btn:hover{background:var(--surface);border-color:var(--gold-dim)}
+.upload-hint{font-size:11px;color:var(--text-muted);font-style:italic}
+.map-ctrl-btn{font-family:'Cinzel',serif;font-size:11px;padding:5px 11px;background:rgba(26,21,16,.85);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;transition:all .12s}
+.map-ctrl-btn:hover{border-color:var(--gold-dim);color:var(--gold)}
+.map-ctrl-btn.active{border-color:var(--gold);color:var(--gold)}
+
+/* Province panel */
+.province-panel{position:absolute;top:0;right:0;bottom:0;width:260px;background:var(--bg2);border-left:1px solid var(--border);padding:14px;display:none;flex-direction:column;gap:8px;z-index:30;overflow-y:auto}
+.province-panel.open{display:flex}
+.pp-header{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.pp-swatch{width:20px;height:20px;border-radius:4px;border:1px solid var(--border);flex-shrink:0}
+#pp-title{font-family:'Cinzel',serif;font-size:13px;color:var(--gold);flex:1}
+.pp-section{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-top:8px}
+.pp-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:'Crimson Text',serif;font-size:14px;color:var(--text);outline:none;transition:border-color .12s}
+.pp-input:focus{border-color:var(--gold-dim)}
+.pp-type-btn{font-family:'Cinzel',serif;font-size:10px;padding:4px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text-dim);cursor:pointer;transition:all .12s}
+.pp-type-btn:hover{border-color:var(--border-light);color:var(--text)}
+.pp-type-btn.selected{border-color:var(--gold);color:var(--gold);background:var(--surface)}
+.pp-select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-family:'Crimson Text',serif;font-size:13px;color:var(--text);outline:none;margin-top:4px}
+.pp-new-btn{width:100%;font-family:'Cinzel',serif;font-size:10px;padding:5px 0;background:transparent;border:1px dashed var(--border);border-radius:6px;color:var(--text-muted);cursor:pointer;transition:all .12s;margin-top:4px}
+.pp-new-btn:hover{border-color:var(--gold-dim);color:var(--gold-dim)}
+.kingdom-item{display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text-dim)}
+.kingdom-item .ki-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.kingdom-item .ki-name{flex:1;font-family:'Cinzel',serif;font-size:11px}
+.kingdom-item .ki-count{font-size:10px;color:var(--text-muted)}
+
+/* Terrain panel */
+#terrain-panel{position:absolute;top:0;right:0;bottom:0;width:200px;background:var(--bg2);border-left:1px solid var(--border);padding:14px 12px;display:none;flex-direction:column;gap:8px;z-index:40;overflow-y:auto}
+#terrain-panel.visible{display:flex}
+#terrain-panel h4{font-family:'Cinzel',serif;font-size:12px;color:var(--gold-dim);letter-spacing:.5px;margin-bottom:4px}
+.terrain-section{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-top:6px}
+.terrain-btn{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border:1px solid transparent;background:var(--bg3);color:var(--text-dim);cursor:pointer;font-size:12px;font-family:'Crimson Text',serif;transition:all .12s;text-align:left}
+.terrain-btn:hover{border-color:var(--border);color:var(--text)}
+.terrain-btn.selected{border-color:var(--gold-dim);color:var(--gold);background:var(--surface)}
+.terrain-btn .tb-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+
+/* Legend */
+#legend{position:absolute;bottom:16px;left:16px;background:rgba(26,21,16,.92);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:none;z-index:50;max-width:260px}
+#legend.visible{display:block}
+#legend h4{font-family:'Cinzel',serif;font-size:11px;color:var(--gold-dim);margin-bottom:8px;letter-spacing:.5px}
+.legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim)}
+.legend-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+/* Zoom controls */
+#hex-zoom-controls{position:absolute;bottom:16px;right:220px;display:none;flex-direction:column;align-items:center;gap:4px;z-index:50;background:rgba(26,21,16,.88);border:1px solid var(--border);border-radius:8px;padding:6px}
+#view-hex.active #hex-zoom-controls{display:flex}
+.zoom-btn{width:32px;height:32px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--gold);font-family:'Cinzel',serif;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:all .12s}
+.zoom-btn:hover{background:var(--surface);border-color:var(--gold-dim)}
+.zoom-btn:active{transform:scale(.92)}
+#zoom-label{font-family:'Cinzel',serif;font-size:10px;color:var(--text-muted);letter-spacing:.5px;padding:2px 0}
+
+/* Hex canvas */
+#hex-canvas{position:absolute;top:0;left:0;bottom:0;width:calc(100% - 200px);height:100%;cursor:crosshair;display:block}
+
+/* Info panel */
+#info-panel{position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:10px 16px;transform:translateY(100%);transition:transform .25s ease;z-index:60;display:flex;align-items:center;gap:20px}
+#info-panel.visible{transform:translateY(0)}
+#info-panel .ip-name{font-family:'Cinzel',serif;font-size:14px;color:var(--gold)}
+#info-panel .ip-detail{font-size:13px;color:var(--text-dim)}
+#info-panel .ip-hint{font-size:11px;color:var(--text-muted);margin-left:auto}
+.ip-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 4px;transition:color .12s}
+.ip-close:hover{color:var(--text)}
+
+/* Barony screen */
+.barony-slot{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:8px;min-height:110px;position:relative;overflow:hidden}
+.barony-slot:hover{border-color:var(--gold-dim);background:var(--bg3)}
+.barony-slot.filled{border-color:var(--border-light)}
+.barony-slot.filled:hover{border-color:var(--gold)}
+.barony-slot .bs-number{font-family:'Cinzel',serif;font-size:10px;color:var(--text-muted);letter-spacing:1px}
+.barony-slot .bs-name{font-family:'Cinzel',serif;font-size:15px;color:var(--gold);font-weight:700}
+.barony-slot .bs-empty-label{font-family:'Cinzel',serif;font-size:13px;color:var(--text-muted);margin:auto;text-align:center}
+.barony-slot .bs-add-icon{font-size:28px;color:var(--border-light);text-align:center;margin:auto;line-height:1;transition:color .15s}
+.barony-slot:hover .bs-add-icon{color:var(--gold-dim)}
+.barony-slot .bs-info{font-size:11px;color:var(--text-muted)}
+.barony-slot .bs-terrain-preview{position:absolute;bottom:0;left:0;right:0;height:4px;border-radius:0 0 10px 10px}
+.barony-slot .bs-action{margin-top:auto;font-family:'Cinzel',serif;font-size:10px;color:var(--gold-dim);letter-spacing:.5px}
+
+/* Splash */
+#splash{position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-direction:column;gap:0}
+#splash.hidden{pointer-events:none;animation:splashFadeOut .8s ease forwards}
+@keyframes splashFadeOut{to{opacity:0}}
+#splash-logo{width:480px;max-width:75vw;opacity:0;transform:scale(.94);animation:logoIn .9s cubic-bezier(0.22,1,0.36,1) .3s forwards}
+@keyframes logoIn{to{opacity:1;transform:scale(1)}}
+#splash-streak{display:none}
+#splash-sub{margin-top:32px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:5px;color:rgba(255,255,255,.28);opacity:0;animation:subFadeIn .6s ease 1.3s forwards;white-space:nowrap}
+@keyframes subFadeIn{to{opacity:1}}
+
+/* World stats bar */
+#world-stats{position:absolute;bottom:10px;left:10px;background:rgba(26,21,16,.85);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-family:'Cinzel',serif;font-size:11px;color:var(--text-dim);z-index:20}
+
+
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div style="position:relative;display:inline-block;">
+    <img id="splash-logo" src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCALQBQADASIAAhEBAxEB/8QAHQABAQACAwEBAQAAAAAAAAAAAAgHCQEFBgMEAv/EAFsQAQABAwMBBQIHBhAKCAYDAAABAgMEBQYRBwgSITFBE1EJFCIyYXGBGEKRobPSFSMmNkNSU1dzdHWCkpWxtBYlMzQ3OGJjZXIXJClHVqKjsidGhZOk0cHC8P/EABYBAQEBAAAAAAAAAAAAAAAAAAABAv/EABYRAQEBAAAAAAAAAAAAAAAAAAABEf/aAAwDAQACEQMRAD8AjQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB2G3MPT9Q13DwdU1WnScO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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//2Q==" alt="AR Softworks">
+    <div id="splash-streak"></div>
+  </div>
+  <div id="splash-sub">REVO WORLD BUILDER &nbsp;·&nbsp; ALPHA v0.1.0 &nbsp;·&nbsp; AR SOFTWORKS™</div>
+</div>
+
+<header>
+  <h1>⚜ REVO World Builder™</h1>
+  <div class="breadcrumb" id="breadcrumb">
+    <span class="crumb active">Mapa Mundi</span>
+  </div>
+  <span class="layer-badge l1" id="layer-badge">Camada I - Mapa Mundi</span>
+  <button class="btn-load" onclick="openSaveModal()" title="Gerenciar saves">🗂 Saves</button>
+  <button class="btn-save" onclick="saveWorldData()" title="Salvar (Ctrl+S)">💾 Salvar</button>
+  <button class="btn-back" id="btn-back" disabled onclick="goBack()">← Voltar</button>
+</header>
+
+<div id="save-toast">✓ Mundo salvo com sucesso</div>
+
+<div id="map-container">
+
+  <!-- VIEW: WORLD MAP -->
+  <div class="map-view active" id="view-world">
+    <div id="world-upload-screen">
+      <div class="upload-card">
+        <div class="upload-icon"></div>
+        <div class="upload-brand">REVO World Builder™</div>
+        <div class="upload-version">AR Softworks™ &nbsp;·&nbsp; Alpha v0.1.0</div>
+        <h2>Carregar Mapa de Províncias</h2>
+        <p>Importe uma imagem PNG onde cada região possui uma <strong>cor sólida única</strong>.<br>Cada cor detectada será tratada como um <strong>Condado</strong> independente.</p>
+        <label class="upload-btn" for="map-file-input">Escolher arquivo PNG / BMP</label>
+        <input type="file" id="map-file-input" accept="image/png,image/bmp,image/jpeg" style="display:none" onchange="loadProvinceMap(this)">
+        <div class="upload-hint">Dica: use cores sólidas e distintas por região para melhor detecção</div>
+      </div>
+    </div>
+    <div id="world-map-area" style="display:none;width:100%;height:100%;position:relative;">
+      <canvas id="province-canvas" style="position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;display:block;"></canvas>
+      <canvas id="province-overlay" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:block;"></canvas>
+      <div style="position:absolute;top:10px;left:10px;display:flex;gap:8px;z-index:20;">
+        <button class="map-ctrl-btn" onclick="document.getElementById('map-file-input2').click()">↺ Trocar mapa</button>
+        <input type="file" id="map-file-input2" accept="image/png,image/bmp,image/jpeg" style="display:none" onchange="loadProvinceMap(this)">
+        <button class="map-ctrl-btn" id="btn-toggle-names" onclick="toggleProvinceNames()">👁 Nomes</button>
+        <button class="map-ctrl-btn" id="btn-toggle-borders" onclick="toggleBorders()">◻ Bordas</button>
+      </div>
+      <div id="world-stats">
+        <span id="stat-provinces">0 regiões</span> &nbsp;·&nbsp;
+        <span id="stat-named">0 nomeadas</span> &nbsp;·&nbsp;
+        <span id="stat-kingdoms">0 reinos</span>
+      </div>
+    </div>
+    <!-- Province editor panel -->
+    <div id="province-panel" class="province-panel">
+      <div class="pp-header">
+        <span id="pp-color-swatch" class="pp-swatch"></span>
+        <span id="pp-title">Região</span>
+        <button class="ip-close" onclick="closeProvincePanel()">✕</button>
+      </div>
+      <div class="pp-section">Nome</div>
+      <input type="text" id="pp-name" class="pp-input" placeholder="Ex: Condado de Ashfield" oninput="updateProvince()">
+      <div class="pp-section">Tipo</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="pp-type-btn" data-type="condado"    onclick="setProvinceType(this)">Condado</button>
+        <button class="pp-type-btn" data-type="ducado"     onclick="setProvinceType(this)">Ducado</button>
+        <button class="pp-type-btn" data-type="cidade"     onclick="setProvinceType(this)">Cidade</button>
+        <button class="pp-type-btn" data-type="oceano"     onclick="setProvinceType(this)">Oceano</button>
+        <button class="pp-type-btn" data-type="territorio" onclick="setProvinceType(this)">Território</button>
+      </div>
+      <div class="pp-section" id="pp-section-kingdom" style="display:none">Reino</div>
+      <div id="pp-kingdom-area" style="display:none">
+        <select id="pp-kingdom-select" class="pp-select" onchange="assignKingdom()"><option value="">— sem reino —</option></select>
+        <button class="pp-new-btn" onclick="createNewKingdom()">+ Novo reino</button>
+      </div>
+      <div class="pp-section" id="pp-section-duchy" style="display:none">Ducado</div>
+      <div id="pp-duchy-area" style="display:none">
+        <select id="pp-duchy-select" class="pp-select" onchange="assignDuchy()"><option value="">— sem ducado —</option></select>
+        <button class="pp-new-btn" onclick="createNewDuchy()">+ Novo ducado</button>
+      </div>
+      <div class="pp-section" id="pp-section-baronies" style="display:none">Barônias</div>
+      <div id="pp-baronies-area" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+          <input type="number" id="pp-baronies-count" class="pp-input" min="1" max="20" value="4" style="width:70px;text-align:center;" oninput="updateBaronyCount()">
+          <span style="font-size:12px;color:var(--text-muted)">barônias (1–20)</span>
+        </div>
+        <button class="pp-new-btn" style="margin-top:6px;border-style:solid;color:var(--gold-dim);border-color:var(--gold-dim);" onclick="openBaronyScreen()">⚔ Gerenciar Barônias →</button>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="pp-section">Cor original</div>
+        <div id="pp-orig-color" style="font-family:monospace;font-size:12px;color:var(--text-dim);padding:4px 0;"></div>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="pp-section">Reinos definidos</div>
+        <div id="kingdom-list" style="display:flex;flex-direction:column;gap:4px;margin-top:6px;"></div>
+        <button class="pp-new-btn" style="margin-top:6px;" onclick="createNewKingdom()">+ Novo reino</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: BARONIES -->
+  <div class="map-view" id="view-baronies">
+    <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;">
+      <button class="btn-back" onclick="closeBaronyScreen()">← Voltar ao Mapa</button>
+      <div style="flex:1;">
+        <div id="bs-title" style="font-family:'Cinzel',serif;font-size:16px;color:var(--gold);"></div>
+        <div id="bs-subtitle" style="font-size:12px;color:var(--text-muted);margin-top:2px;"></div>
+      </div>
+      <span style="font-family:'Cinzel',serif;font-size:11px;color:var(--text-dim);border:1px solid var(--border);padding:3px 10px;border-radius:12px;">Camada II - Barônias</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:28px 32px;">
+      <div id="barony-grid" style="display:grid;gap:16px;"></div>
+    </div>
+  </div>
+
+  <!-- VIEW: HEX EDITOR -->
+  <div class="map-view" id="view-hex">
+    <canvas id="hex-canvas"></canvas>
+    <div id="hex-zoom-controls">
+      <button class="zoom-btn" onclick="hexZoom(1.25)">+</button>
+      <span id="zoom-label">100%</span>
+      <button class="zoom-btn" onclick="hexZoom(0.8)">−</button>
+      <button class="zoom-btn" onclick="hexResetView()" style="font-size:11px;">⌂</button>
+    </div>
+  </div>
+
+  <!-- TERRAIN PANEL -->
+  <div id="terrain-panel">
+    <!-- Tabs -->
+    <div id="panel-tabs">
+      <button class="panel-tab active" onclick="switchPanelTab('terrain')">Terreno</button>
+      <button class="panel-tab" onclick="switchPanelTab('buildings')">Edificios</button>
+    </div>
+    <!-- Terrain tab -->
+    <div id="tab-terrain" class="active">
+    <div class="terrain-section">Base</div>
+    <button class="terrain-btn" onclick="selectTerrain(this,'plains')"><div class="tb-swatch" style="background:#8ab85a;border:1px solid #6a9840"></div>Planície</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'pasture')"><div class="tb-swatch" style="background:#a8d870;border:1px solid #78a850"></div>Pastagem</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'desert')"><div class="tb-swatch" style="background:#d8b870;border:1px solid #b89850"></div>Deserto</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'tundra')"><div class="tb-swatch" style="background:#a8c8c8;border:1px solid #88a8a8"></div>Tundra</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'snow')"><div class="tb-swatch" style="background:#e8f0f8;border:1px solid #c8d8e8"></div>Neve</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'coast')"><div class="tb-swatch" style="background:#78b8d8;border:1px solid #5898b8"></div>Costa</button>
+    <button class="terrain-btn selected" onclick="selectTerrain(this,'ocean')"><div class="tb-swatch" style="background:#3868a8;border:1px solid #285888"></div>Oceano</button>
+    <div class="terrain-section">Características</div>
+    <button class="terrain-btn" onclick="selectTerrain(this,'forest')"><div class="tb-swatch" style="background:#3a7a3a;border:1px solid #2a5a2a"></div>Floresta</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'tropical')"><div class="tb-swatch" style="background:#2a8040;border:1px solid #1a6030"></div>Fl. Tropical</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'swamp')"><div class="tb-swatch" style="background:#5a7848;border:1px solid #3a5830"></div>Pântano</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'wetlands')"><div class="tb-swatch" style="background:#6888a0;border:1px solid #4a6880"></div>Pl. Inundadas</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'oasis')"><div class="tb-swatch" style="background:#48a878;border:1px solid #288058"></div>Oásis</button>
+    <div class="terrain-section">Relevo</div>
+    <button class="terrain-btn" onclick="selectTerrain(this,'mountain')"><div class="tb-swatch" style="background:#888878;border:1px solid #686858"></div>Montanha</button>
+    <button class="terrain-btn" onclick="selectTerrain(this,'hill')"><div class="tb-swatch" style="background:#a89868;border:1px solid #887848"></div>Colina</button>
+    </div><!-- end tab-terrain -->
+    <!-- Buildings tab -->
+    <div id="tab-buildings">
+      <div id="layer4-name" style="display:none"></div>
+      <div class="terrain-section">Estruturas</div>
+      <button class="building-btn" data-btype="vila"      onclick="selectBuilding(this,'vila')">
+        <div class="bb-icon" style="background:#b87830">V</div>
+        <div><span>Vila</span><span class="bb-terrains">plains, pasture, coast, hill</span></div>
+      </button>
+      <button class="building-btn" data-btype="castelo"   onclick="selectBuilding(this,'castelo')">
+        <div class="bb-icon" style="background:#888878">C</div>
+        <div><span>Castelo</span><span class="bb-terrains">plains, hill, mountain</span></div>
+      </button>
+      <button class="building-btn" data-btype="mina"      onclick="selectBuilding(this,'mina')">
+        <div class="bb-icon" style="background:#706860">M</div>
+        <div><span>Mina</span><span class="bb-terrains">mountain, hill</span></div>
+      </button>
+      <button class="building-btn" data-btype="dungeon"   onclick="selectBuilding(this,'dungeon')">
+        <div class="bb-icon" style="background:#483858">D</div>
+        <div><span>Dungeon</span><span class="bb-terrains">mountain, hill, forest, swamp</span></div>
+      </button>
+      <button class="building-btn" data-btype="cripta"    onclick="selectBuilding(this,'cripta')">
+        <div class="bb-icon" style="background:#485060">C</div>
+        <div><span>Cripta</span><span class="bb-terrains">qualquer terreno</span></div>
+      </button>
+      <button class="building-btn" data-btype="santuario" onclick="selectBuilding(this,'santuario')">
+        <div class="bb-icon" style="background:#806040">S</div>
+        <div><span>Santuario</span><span class="bb-terrains">qualquer terreno</span></div>
+      </button>
+      <div class="terrain-section" style="margin-top:10px">Remover</div>
+      <button class="building-btn" data-btype="__remove" onclick="selectBuilding(this,'__remove')">
+        <div class="bb-icon" style="background:#803030">X</div>
+        <div><span>Remover edificio</span></div>
+      </button>
+    </div><!-- end tab-buildings -->
+  </div>
+
+  <!-- LEGEND -->
+  <div id="legend">
+    <h4>Legenda de Terrenos</h4>
+    <div class="legend-grid">
+      <div class="legend-item"><div class="legend-swatch" style="background:#8ab85a"></div>Planície</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#a8d870"></div>Pastagem</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#d8b870"></div>Deserto</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#a8c8c8"></div>Tundra</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#e8f0f8;border:1px solid #ccc"></div>Neve</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#78b8d8"></div>Costa</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#3868a8"></div>Oceano</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#3a7a3a"></div>Floresta</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#2a8040"></div>Fl. Tropical</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#5a7848"></div>Pântano</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#6888a0"></div>Pl. Inundadas</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#48a878"></div>Oásis</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#888878"></div>Montanha</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#a89868"></div>Colina</div>
+    </div>
+  </div>
+
+  <!-- Info panel -->
+  <div id="info-panel">
+    <div>
+      <div class="ip-name" id="ip-name">—</div>
+      <div class="ip-detail" id="ip-detail">—</div>
+    </div>
+    <div class="ip-hint" id="ip-hint"></div>
+    <button class="ip-close" onclick="closeInfo()">✕</button>
+  </div>
+
+</div><!-- end map-container -->
+
+<div id="tooltip">
+  <span class="tt-title" id="tt-title"></span>
+  <span class="tt-sub" id="tt-sub"></span>
+</div>
+
+  <div id="debug-output"></div>
+</div>
+
+<script>
+
+// === STATE ===
+const state = { layer:0, history:[], kingdom:null, county:null, fief:null, selectedTerrain:'ocean' };
+const hexData = {};
+
+// === HEX CONSTANTS (declared first -- no hoisting issues) ===
+const HEX_COLS = 16;
+const HEX_ROWS = 12;
+function hexIdx(c,r){ return r*HEX_COLS+c; }
+function initHexGrid(id){ hexData[id] = new Array(HEX_COLS*HEX_ROWS).fill('ocean'); }
+
+// ===========================================================
+//  SISTEMA DE COORDENADAS AXIAIS (q, r)
+//  Modelo: pointy-top hexagons, odd-r offset storage
+//
+//  O grid existente usa (col, row) com array flat por performance
+//  de render. O sistema axial (q, r) vive em paralelo e permite:
+//    - Identificacao unica de cada hex
+//    - Calculo correto de vizinhos
+//    - Base para logica de terreno, transicoes e futuro 3D
+// ===========================================================
+
+// -- Conversao: offset (col, row) <-> axial (q, r) ----------
+// Usa convencao odd-r (linhas impares deslocadas para direita)
+
+function offsetToAxial(col, row) {
+  const q = col - Math.floor((row - (row & 1)) / 2);
+  const r = row;
+  return { q, r };
+}
+
+function axialToOffset(q, r) {
+  const col = q + Math.floor((r - (r & 1)) / 2);
+  const row = r;
+  return { col, row };
+}
+
+// -- 6 direcoes axiais (vizinhos) ---------------------------
+const HEX_DIRECTIONS = [
+  { q: +1, r:  0 },
+  { q: -1, r:  0 },
+  { q:  0, r: +1 },
+  { q:  0, r: -1 },
+  { q: +1, r: -1 },
+  { q: -1, r: +1 },
+];
+
+// Retorna os 6 vizinhos axiais de (q, r)
+function hexNeighbors(q, r) {
+  return HEX_DIRECTIONS.map(d => ({ q: q + d.q, r: r + d.r }));
+}
+
+// Retorna vizinhos que existem dentro do grid (col/row bounds)
+function hexNeighborsInGrid(col, row, cols, rows) {
+  cols = cols || HEX_COLS;
+  rows = rows || HEX_ROWS;
+  const { q, r } = offsetToAxial(col, row);
+  return hexNeighbors(q, r)
+    .map(n => axialToOffset(n.q, n.r))
+    .filter(o => o.col >= 0 && o.col < cols && o.row >= 0 && o.row < rows);
+}
+
+// -- Distancia axial entre dois hexes -----------------------
+function hexDistance(q1, r1, q2, r2) {
+  return (Math.abs(q1 - q2) + Math.abs(q1 + r1 - q2 - r2) + Math.abs(r1 - r2)) / 2;
+}
+
+// -- Estrutura enriquecida de um hex ------------------------
+// Retorna o objeto completo de um hex dado (col, row) e um fiefId
+function getHexData(fiefId, col, row) {
+  const grid = hexData[fiefId];
+  if (!grid) return null;
+  const idx      = hexIdx(col, row);
+  const axial    = offsetToAxial(col, row);
+  const terrain  = grid[idx] || 'ocean';
+  const building = buildingData[fiefId] ? buildingData[fiefId][idx] || null : null;
+  return {
+    q:          axial.q,
+    r:          axial.r,
+    col,
+    row,
+    idx,
+    tipo_base:  terrain,
+    bioma:      null,   // extensao futura
+    altura:     0,      // extensao futura (relevo)
+    building,
+    neighbors:  hexNeighbors(axial.q, axial.r),
+  };
+}
+
+// -- Exporta o grid completo em formato axial ---------------
+// Util para saves estruturados e futuro uso em 3D/shaders
+function exportGridAxial(fiefId) {
+  const grid = hexData[fiefId];
+  if (!grid) return [];
+  const result = [];
+  for (let row = 0; row < HEX_ROWS; row++) {
+    for (let col = 0; col < HEX_COLS; col++) {
+      result.push(getHexData(fiefId, col, row));
+    }
+  }
+  return result;
+}
+
+// -- Busca hex por coordenada axial -------------------------
+function getHexByAxial(fiefId, q, r) {
+  const { col, row } = axialToOffset(q, r);
+  if (col < 0 || col >= HEX_COLS || row < 0 || row >= HEX_ROWS) return null;
+  return getHexData(fiefId, col, row);
+}
+
+// -- Terreno dos vizinhos de um hex -------------------------
+function getNeighborTerrains(fiefId, col, row) {
+  return hexNeighborsInGrid(col, row).map(n => {
+    const idx = hexIdx(n.col, n.row);
+    const axial = offsetToAxial(n.col, n.row);
+    return {
+      q: axial.q,
+      r: axial.r,
+      col: n.col,
+      row: n.row,
+      tipo_base: (hexData[fiefId] || [])[idx] || 'ocean',
+    };
+  });
+}
+// ===========================================================
+
+
+// === TERRAINS ===
+const TERRAINS = {
+  plains:  {fill:'#8ab85a',stroke:'#6a9840', label:'Planicie'},
+  pasture: {fill:'#a8d870',stroke:'#78a850', label:'Pastagem'},
+  desert:  {fill:'#d8b870',stroke:'#b89850', label:'Deserto'},
+  tundra:  {fill:'#a8c8c8',stroke:'#88a8a8', label:'Tundra'},
+  snow:    {fill:'#e8f0f8',stroke:'#c8d8e8', label:'Neve'},
+  coast:   {fill:'#78b8d8',stroke:'#5898b8', label:'Costa'},
+  ocean:   {fill:'#3868a8',stroke:'#285888', label:'Oceano'},
+  forest:  {fill:'#3a7a3a',stroke:'#2a5a2a', label:'Floresta'},
+  tropical:{fill:'#2a8040',stroke:'#1a6030', label:'Fl. Tropical'},
+  swamp:   {fill:'#5a7848',stroke:'#3a5830', label:'Pantano'},
+  wetlands:{fill:'#6888a0',stroke:'#4a6880', label:'Pl. Inundadas'},
+  oasis:   {fill:'#48a878',stroke:'#288058', label:'Oasis'},
+  mountain:{fill:'#888878',stroke:'#686858', label:'Montanha'},
+  hill:    {fill:'#a89868',stroke:'#887848', label:'Colina'},
+};
+
+// === PROVINCE MAP ENGINE ===
+let provinceMap={}, provincePixelIndex=null, sourceImageData=null;
+let mapImgW=0, mapImgH=0, showNames=true, showBorders=true;
+let selectedProvince=null, hoverProvince=null;
+let worldKingdoms={};
+
+function loadProvinceMap(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { const img=new Image(); img.onload=()=>{detectProvinces(img);input.value=''}; img.src=e.target.result; };
+  reader.readAsDataURL(file);
+}
+
+function detectProvinces(img) {
+  const off=document.createElement('canvas'); off.width=img.width; off.height=img.height;
+  const octx=off.getContext('2d'); octx.drawImage(img,0,0);
+  sourceImageData=octx.getImageData(0,0,img.width,img.height);
+  mapImgW=img.width; mapImgH=img.height;
+  const data=sourceImageData.data, total=img.width*img.height;
+  provinceMap={}; provincePixelIndex=new Array(total);
+  for(let i=0;i<total;i++){
+    const r=data[i*4]&0xF8, g=data[i*4+1]&0xF8, b=data[i*4+2]&0xF8;
+    const key=`${r},${g},${b}`;
+    if(!provinceMap[key]) provinceMap[key]={colorKey:key,r,g,b,pixels:[],cx:0,cy:0,
+      bbox:{minX:mapImgW,minY:mapImgH,maxX:0,maxY:0},name:'',type:'condado',kingdomId:'',duchyId:'',baronyCount:4,baronies:[]};
+    provinceMap[key].pixels.push(i);
+    provincePixelIndex[i]=key;
+    const px=i%mapImgW, py=Math.floor(i/mapImgW);
+    const bb=provinceMap[key].bbox;
+    if(px<bb.minX)bb.minX=px; if(px>bb.maxX)bb.maxX=px;
+    if(py<bb.minY)bb.minY=py; if(py>bb.maxY)bb.maxY=py;
+  }
+  for(const key in provinceMap){
+    const p=provinceMap[key]; let sx=0,sy=0;
+    for(const pi of p.pixels){sx+=pi%mapImgW; sy+=Math.floor(pi/mapImgW);}
+    p.cx=sx/p.pixels.length; p.cy=sy/p.pixels.length;
+  }
+  // Remove noise
+  for(const key of Object.keys(provinceMap)){
+    if(provinceMap[key].pixels.length<4) delete provinceMap[key];
+  }
+  document.getElementById('world-upload-screen').style.display='none';
+  document.getElementById('world-map-area').style.display='block';
+  updateStats();
+  if(window._pendingWorldData) restoreWorldData(window._pendingWorldData);
+  requestAnimationFrame(renderProvinceMap);
+}
+
+function renderProvinceMap(){
+  const canvas=document.getElementById('province-canvas');
+  const overlay=document.getElementById('province-overlay');
+  if(!canvas||!sourceImageData) return;
+  const dpr=window.devicePixelRatio||1;
+  const cssW=canvas.offsetWidth, cssH=canvas.offsetHeight;
+  if(!cssW||!cssH){requestAnimationFrame(renderProvinceMap);return;}
+  canvas.width=cssW*dpr; canvas.height=cssH*dpr;
+  overlay.width=cssW*dpr; overlay.height=cssH*dpr;
+  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+  const scaleX=cssW/mapImgW, scaleY=cssH/mapImgH;
+  const scale=Math.min(scaleX,scaleY);
+  const offX=(cssW-mapImgW*scale)/2, offY=(cssH-mapImgH*scale)/2;
+  canvas._scale=scale; canvas._offX=offX; canvas._offY=offY;
+  const renderData=new ImageData(mapImgW,mapImgH);
+  const src=sourceImageData.data, dst=renderData.data;
+  for(let i=0;i<mapImgW*mapImgH;i++){
+    const key=provincePixelIndex[i], prov=key&&provinceMap[key];
+    if(!prov){dst[i*4]=src[i*4];dst[i*4+1]=src[i*4+1];dst[i*4+2]=src[i*4+2];dst[i*4+3]=255;continue;}
+    let r=prov.r,g=prov.g,b=prov.b;
+    if(prov.kingdomId&&worldKingdoms[prov.kingdomId]){
+      const kc=worldKingdoms[prov.kingdomId]._rgb;
+      r=Math.round(r*.35+kc.r*.65); g=Math.round(g*.35+kc.g*.65); b=Math.round(b*.35+kc.b*.65);
+    }
+    if(key===hoverProvince){r=Math.min(255,r+60);g=Math.min(255,g+60);b=Math.min(255,b+40);}
+    if(key===selectedProvince){r=Math.min(255,r+30);g=Math.min(255,g+30);b=Math.min(255,b+80);}
+    dst[i*4]=r;dst[i*4+1]=g;dst[i*4+2]=b;dst[i*4+3]=255;
+  }
+  const tmp=document.createElement('canvas'); tmp.width=mapImgW; tmp.height=mapImgH;
+  tmp.getContext('2d').putImageData(renderData,0,0);
+  ctx.fillStyle='#1a1510'; ctx.fillRect(0,0,cssW,cssH);
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(tmp,offX,offY,mapImgW*scale,mapImgH*scale);
+  if(showBorders) drawBorders(ctx,scale,offX,offY);
+  if(showNames) drawProvinceNames(ctx,scale,offX,offY);
+}
+
+function drawBorders(ctx,scale,offX,offY){
+  ctx.strokeStyle='rgba(0,0,0,0.55)'; ctx.lineWidth=Math.max(1,scale*.8);
+  const step=Math.max(1,Math.floor(2/scale));
+  for(let y=0;y<mapImgH-1;y+=step){
+    for(let x=0;x<mapImgW-1;x+=step){
+      const k=provincePixelIndex[y*mapImgW+x];
+      const kr=provincePixelIndex[y*mapImgW+x+1];
+      const kb=provincePixelIndex[(y+1)*mapImgW+x];
+      if(k!==kr){const sx=offX+x*scale,sy=offY+y*scale;ctx.beginPath();ctx.moveTo(sx+scale,sy);ctx.lineTo(sx+scale,sy+scale*step);ctx.stroke();}
+      if(k!==kb){const sx=offX+x*scale,sy=offY+y*scale;ctx.beginPath();ctx.moveTo(sx,sy+scale);ctx.lineTo(sx+scale*step,sy+scale);ctx.stroke();}
+    }
+  }
+}
+
+function drawProvinceNames(ctx,scale,offX,offY){
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const key in provinceMap){
+    const p=provinceMap[key]; if(!p.name) continue;
+    const sx=offX+p.cx*scale, sy=offY+p.cy*scale;
+    const fs=Math.max(9,Math.min(14,scale*10));
+    ctx.font=`500 ${fs}px Cinzel,serif`;
+    ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillText(p.name,sx+1,sy+1);
+    ctx.fillStyle='#ffe8a0'; ctx.fillText(p.name,sx,sy);
+  }
+}
+
+function pixelToProvince(cx,cy){
+  const canvas=document.getElementById('province-canvas');
+  const scale=canvas._scale||1, offX=canvas._offX||0, offY=canvas._offY||0;
+  const imgX=Math.round((cx-offX)/scale), imgY=Math.round((cy-offY)/scale);
+  if(imgX<0||imgY<0||imgX>=mapImgW||imgY>=mapImgH) return null;
+  const key=provincePixelIndex[imgY*mapImgW+imgX];
+  return (key&&provinceMap[key]&&provinceMap[key].pixels.length>=4)?key:null;
+}
+
+// Province canvas events
+document.addEventListener('DOMContentLoaded',()=>{
+  const pc=document.getElementById('province-canvas');
+  pc.addEventListener('click',e=>{
+    const rect=pc.getBoundingClientRect();
+    const key=pixelToProvince(e.clientX-rect.left,e.clientY-rect.top);
+    if(!key) return;
+    selectedProvince=key; openProvincePanel(key); renderProvinceMap();
+  });
+  pc.addEventListener('dblclick',e=>{
+    const rect=pc.getBoundingClientRect();
+    const key=pixelToProvince(e.clientX-rect.left,e.clientY-rect.top);
+    if(!key) return;
+    const p=provinceMap[key];
+    if(p&&p.name&&(p.type==='condado'||p.type==='ducado')){selectedProvince=key;openBaronyScreen();}
+  });
+  pc.addEventListener('mousemove',e=>{
+    const rect=pc.getBoundingClientRect();
+    const key=pixelToProvince(e.clientX-rect.left,e.clientY-rect.top);
+    if(key!==hoverProvince){hoverProvince=key;renderProvinceMap();}
+    if(key&&provinceMap[key]){const p=provinceMap[key];showTip(e,p.name||`Regiao (${key})`,p.kingdomId&&worldKingdoms[p.kingdomId]?worldKingdoms[p.kingdomId].name:'sem atribuicao');}
+    else hideTip();
+  });
+  pc.addEventListener('mouseleave',()=>{hoverProvince=null;hideTip();renderProvinceMap();});
+  window.addEventListener('resize',()=>{if(state.layer===0&&sourceImageData)renderProvinceMap();});
+});
+
+// Province panel
+function openProvincePanel(key){
+  const p=provinceMap[key]; if(!p) return;
+  const panel=document.getElementById('province-panel');
+  panel.classList.add('open');
+  document.getElementById('pp-color-swatch').style.background=`rgb(${p.r},${p.g},${p.b})`;
+  document.getElementById('pp-title').textContent=p.name||'Regiao sem nome';
+  document.getElementById('pp-name').value=p.name||'';
+  document.getElementById('pp-orig-color').textContent=`rgb(${p.r},${p.g},${p.b}) . ${p.pixels.length} pixels`;
+  document.getElementById('pp-baronies-count').value=p.baronyCount||4;
+  document.querySelectorAll('.pp-type-btn').forEach(b=>b.classList.toggle('selected',b.dataset.type===p.type));
+  refreshKingdomSelect(p); refreshDuchySelect(p); updatePanelVisibility(p.type);
+}
+function closeProvincePanel(){document.getElementById('province-panel').classList.remove('open');selectedProvince=null;renderProvinceMap();}
+function updateProvince(){if(!selectedProvince)return;const p=provinceMap[selectedProvince];p.name=document.getElementById('pp-name').value;document.getElementById('pp-title').textContent=p.name||'Regiao sem nome';updateStats();renderProvinceMap();}
+function setProvinceType(btn){if(!selectedProvince)return;const p=provinceMap[selectedProvince];p.type=btn.dataset.type;document.querySelectorAll('.pp-type-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');updatePanelVisibility(p.type);renderProvinceMap();}
+function updatePanelVisibility(type){
+  const sK=['condado','ducado','cidade','territorio'].includes(type);
+  const sD=type==='condado'||type==='cidade';
+  const sB=type==='condado'||type==='ducado';
+  document.getElementById('pp-section-kingdom').style.display=sK?'':'none';
+  document.getElementById('pp-kingdom-area').style.display=sK?'':'none';
+  document.getElementById('pp-section-duchy').style.display=sD?'':'none';
+  document.getElementById('pp-duchy-area').style.display=sD?'':'none';
+  document.getElementById('pp-section-baronies').style.display=sB?'':'none';
+  document.getElementById('pp-baronies-area').style.display=sB?'':'none';
+  if(sB&&selectedProvince) document.getElementById('pp-baronies-count').value=provinceMap[selectedProvince].baronyCount||4;
+}
+function updateBaronyCount(){if(!selectedProvince)return;const p=provinceMap[selectedProvince];p.baronyCount=Math.max(1,Math.min(20,parseInt(document.getElementById('pp-baronies-count').value)||4));if(!p.baronies)p.baronies=[];}
+
+// Kingdoms
+const KINGDOM_COLORS=['#c84040','#4a7ab8','#4a8848','#c87820','#8848a8','#a84848','#3a8878','#c8a040','#6a48c8','#48a8a8'];
+let kingdomColorIdx=0;
+function createNewKingdom(){showInputModal('Nome do novo reino:','Ex: Reino de Ashland',name=>{const id='k_'+Date.now();const color=KINGDOM_COLORS[kingdomColorIdx++%KINGDOM_COLORS.length];const rgb=hexToRgb(color);worldKingdoms[id]={id,name,color,_rgb:rgb,duchies:{}};refreshKingdomList();if(selectedProvince)refreshKingdomSelect(provinceMap[selectedProvince]);});}
+function createNewDuchy(){if(!selectedProvince)return;const p=provinceMap[selectedProvince];if(!p.kingdomId){showInputModal('Atribua um reino primeiro!','',null,true);return;}showInputModal('Nome do novo ducado:','Ex: Ducado de Ferro',name=>{const id='d_'+Date.now();worldKingdoms[p.kingdomId].duchies[id]={id,name,kingdomId:p.kingdomId};refreshDuchySelect(p);});}
+function assignKingdom(){if(!selectedProvince)return;const p=provinceMap[selectedProvince];p.kingdomId=document.getElementById('pp-kingdom-select').value;p.duchyId='';refreshDuchySelect(p);updateStats();refreshKingdomList();renderProvinceMap();}
+function assignDuchy(){if(!selectedProvince)return;provinceMap[selectedProvince].duchyId=document.getElementById('pp-duchy-select').value;}
+function refreshKingdomSelect(p){const sel=document.getElementById('pp-kingdom-select');sel.innerHTML='<option value="">-- sem reino --</option>';for(const id in worldKingdoms){const k=worldKingdoms[id];const o=document.createElement('option');o.value=id;o.textContent=k.name;if(p.kingdomId===id)o.selected=true;sel.appendChild(o);}}
+function refreshDuchySelect(p){const sel=document.getElementById('pp-duchy-select');sel.innerHTML='<option value="">-- sem ducado --</option>';if(p.kingdomId&&worldKingdoms[p.kingdomId]){for(const id in worldKingdoms[p.kingdomId].duchies){const d=worldKingdoms[p.kingdomId].duchies[id];const o=document.createElement('option');o.value=id;o.textContent=d.name;if(p.duchyId===id)o.selected=true;sel.appendChild(o);}}}
+function refreshKingdomList(){const list=document.getElementById('kingdom-list');list.innerHTML='';for(const id in worldKingdoms){const k=worldKingdoms[id];const ct=Object.values(provinceMap).filter(p=>p.kingdomId===id).length;const div=document.createElement('div');div.className='kingdom-item';div.innerHTML=`<div class="ki-swatch" style="background:${k.color}"></div><span class="ki-name">${k.name}</span><span class="ki-count">${ct} reg.</span>`;list.appendChild(div);}}
+function updateStats(){const tot=Object.keys(provinceMap).length;const nm=Object.values(provinceMap).filter(p=>p.name).length;const kn=Object.keys(worldKingdoms).length;document.getElementById('stat-provinces').textContent=`${tot} regioes`;document.getElementById('stat-named').textContent=`${nm} nomeadas`;document.getElementById('stat-kingdoms').textContent=`${kn} reinos`;}
+function toggleProvinceNames(){showNames=!showNames;document.getElementById('btn-toggle-names').classList.toggle('active',showNames);renderProvinceMap();}
+function toggleBorders(){showBorders=!showBorders;document.getElementById('btn-toggle-borders').classList.toggle('active',showBorders);renderProvinceMap();}
+function hexToRgb(hex){return{r:parseInt(hex.slice(1,3),16),g:parseInt(hex.slice(3,5),16),b:parseInt(hex.slice(5,7),16)};}
+
+// === BARONY SCREEN ===
+let currentBaronyProvinceKey=null;
+
+function openBaronyScreen(){
+  if(!selectedProvince)return;
+  const p=provinceMap[selectedProvince];
+  if(!p.name){showInputModal('Defina um nome para o condado primeiro!','',null,true);return;}
+  p.baronyCount=p.baronyCount||4;
+  if(!p.baronies)p.baronies=[];
+  currentBaronyProvinceKey=selectedProvince;
+  closeProvincePanel();
+  document.getElementById('bs-title').textContent=p.name;
+  const kName=p.kingdomId&&worldKingdoms[p.kingdomId]?worldKingdoms[p.kingdomId].name:'';
+  document.getElementById('bs-subtitle').textContent=(kName?kName+' . ':'')+p.baronyCount+' baronias';
+  renderBaronyGrid(p);
+  state.layer=1.5; state.history=[{name:p.name}]; updateHeader();
+  setView('view-baronies');
+}
+
+function closeBaronyScreen(){
+  currentBaronyProvinceKey=null;
+  state.layer=0; state.history=[]; updateHeader();
+  setView('view-world');
+  if(sourceImageData) renderProvinceMap();
+}
+
+function renderBaronyGrid(p){
+  const grid=document.getElementById('barony-grid');
+  const count=p.baronyCount||4;
+  const cols=count<=3?count:count<=8?4:4;
+  grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  grid.innerHTML='';
+  for(let i=0;i<count;i++){
+    const barony=p.baronies&&p.baronies[i];
+    const slot=document.createElement('div');
+    slot.className='barony-slot'+(barony?' filled':'');
+    if(barony){
+      const fiefId=currentBaronyProvinceKey+'_b'+i;
+      const hasTerrain=!!hexData[fiefId];
+      const tc=hasTerrain?getDominantTerrainColor(fiefId):'#3a3028';
+      slot.innerHTML=`<div class="bs-number">Baronia ${String(i+1).padStart(2,'0')}</div>
+        <div class="bs-name">${barony.name}</div>
+        <div class="bs-info">${hasTerrain?'Terreno configurado':'Sem terreno'}</div>
+        <div class="bs-action">Clique para editar terreno</div>
+        <div class="bs-terrain-preview" style="background:${tc}"></div>`;
+      slot.onclick=()=>enterBaronyHex(i);
+    } else {
+      slot.innerHTML=`<div class="bs-number">Baronia ${String(i+1).padStart(2,'0')}</div>
+        <div class="bs-add-icon">+</div>
+        <div class="bs-empty-label">Clique para criar</div>`;
+      slot.onclick=()=>createBarony(i);
+    }
+    grid.appendChild(slot);
+  }
+}
+
+function createBarony(index){
+  const p=provinceMap[currentBaronyProvinceKey]; if(!p) return;
+  showInputModal('Nome da baronia '+(index+1)+':','Ex: Terras do Norte',name=>{ if(!p.baronies)p.baronies=[];p.baronies[index]={name,provinceKey:currentBaronyProvinceKey,provinceName:p.name,kingdomId:p.kingdomId,duchyId:p.duchyId,index};renderBaronyGrid(p); });
+}
+
+function enterBaronyHex(baronyIndex){
+  const p=provinceMap[currentBaronyProvinceKey];
+  if(!p){console.log('[ERR] no province for key');return;}
+  const barony=p.baronies&&p.baronies[baronyIndex];
+  if(!barony){createBarony(baronyIndex);return;}
+  const fiefId=currentBaronyProvinceKey+'_b'+baronyIndex;
+  state.fief=fiefId; state.layer=3;
+  state.history=[{name:p.name},{name:barony.name}];
+  if(!hexData[fiefId]) initHexGrid(fiefId);
+  hexZoom_=1; hexPanX_=0; hexPanY_=0;
+  setView('view-hex');
+  document.getElementById('terrain-panel').classList.add('visible');
+  document.getElementById('legend').classList.add('visible');
+  updateHeader();
+  scheduleHexDraw();
+}
+
+function getDominantTerrainColor(fiefId){
+  const grid=hexData[fiefId]; if(!grid||!grid.length)return'#3a3028';
+  const counts={};
+  grid.forEach(t=>{counts[t]=(counts[t]||0)+1;});
+  const dom=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+  return TERRAINS[dom]?.fill||'#3a3028';
+}
+
+// === NAVIGATION ===
+function setView(id){
+  document.querySelectorAll('.map-view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function updateHeader(){
+  const labels={0:'Camada I -- Mapa Mundi',1:'Camada I -- Reino',1.5:'Camada II -- Baronias',2:'Camada II -- Condado',3:'Camada III -- Feudo',4:'Camada IV -- Interior'};
+  const classes={0:'l1',1:'l1',1.5:'l2',2:'l2',3:'l3',4:'l4'};
+  const badge=document.getElementById('layer-badge');
+  badge.textContent=labels[state.layer]||'';
+  badge.className='layer-badge '+(classes[state.layer]||'l1');
+  document.getElementById('btn-back').disabled=state.layer===0;
+  const bc=document.getElementById('breadcrumb');
+  bc.innerHTML='';
+  const crumbs=[{name:'Mapa Mundi'},...state.history];
+  crumbs.forEach((c,i)=>{
+    if(i>0) bc.innerHTML+='<span class="sep"></span>';
+    const s=document.createElement('span');
+    s.className='crumb'+(i===crumbs.length-1?' active':'');
+    s.textContent=c.name;
+    if(i<crumbs.length-1) s.onclick=()=>goToLayer(i);
+    bc.appendChild(s);
+  });
+}
+
+function goToLayer(idx){
+  if(idx===0){goToWorld();return;}
+  state.history=state.history.slice(0,idx);
+  if(idx===1&&state.layer===3){
+    if(currentBaronyProvinceKey){
+      state.layer=1.5;
+      setView('view-baronies');
+      document.getElementById('terrain-panel').classList.remove('visible');
+      document.getElementById('legend').classList.remove('visible');
+      updateHeader();
+    }
+  }
+}
+
+function goToWorld(){
+  state.layer=0;state.history=[];state.kingdom=null;state.county=null;state.fief=null;
+  setView('view-world');
+  document.getElementById('terrain-panel').classList.remove('visible');
+  document.getElementById('legend').classList.remove('visible');
+  updateHeader();closeInfo();
+}
+
+function goBack(){
+  if(state.layer===0) return;
+  if(state.layer===4){ exitInterior(); return; }
+  if(state.layer===3&&currentBaronyProvinceKey){
+    state.layer=1.5;
+    state.history=[{name:provinceMap[currentBaronyProvinceKey]?.name||''}];
+    setView('view-baronies');
+    document.getElementById('terrain-panel').classList.remove('visible');
+    document.getElementById('legend').classList.remove('visible');
+    updateHeader(); return;
+  }
+  if(state.layer===1.5){closeBaronyScreen();return;}
+  if(state.layer===3){state.layer=0;goToWorld();return;}
+  goToWorld();
+}
+
+// === HEX GRID ENGINE ===
+let hexZoom_=1, hexPanX_=0, hexPanY_=0;
+
+function fitHexRadius(W,H){
+  return Math.min(W/(Math.sqrt(3)*(HEX_COLS+.5)), H/(2+1.5*(HEX_ROWS-1)));
+}
+
+function hxCenter(col,row,r){
+  const dx=Math.sqrt(3)*r, dy=1.5*r;
+  const ox=(row&1)?dx*.5:0;
+  return {x:col*dx+ox+r+hexPanX_, y:row*dy+r+hexPanY_};
+}
+
+function hxCorners(cx,cy,r){
+  const pts=[];
+  for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-90);pts.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);}
+  return pts;
+}
+
+let hxCv, hxCtx2, hxR=30, hxHoverC=-1, hxHoverR=-1;
+
+function drawHexMap(){
+  hxCv=document.getElementById('hex-canvas');
+  if(!hxCv) return;
+  hxCtx2=hxCv.getContext('2d');
+  const W=hxCv.offsetWidth, H=hxCv.offsetHeight;
+  if(!W||!H) return;
+  const dpr=window.devicePixelRatio||1;
+  hxCv.width=Math.round(W*dpr); hxCv.height=Math.round(H*dpr);
+  hxCtx2.setTransform(dpr,0,0,dpr,0,0);
+  hxR=fitHexRadius(W,H)*hexZoom_;
+  hxCtx2.fillStyle='#1e1c18'; hxCtx2.fillRect(0,0,W,H);
+  const grid=hexData[state.fief]; if(!grid) return;
+  for(let row=0;row<HEX_ROWS;row++){
+    for(let col=0;col<HEX_COLS;col++){
+      const t=TERRAINS[grid[hexIdx(col,row)]||'ocean'];
+      const {x,y}=hxCenter(col,row,hxR);
+      if(x+hxR<0||x-hxR>W||y+hxR<0||y-hxR>H) continue;
+      const pts=hxCorners(x,y,hxR);
+      hxCtx2.beginPath(); hxCtx2.moveTo(pts[0][0],pts[0][1]);
+      for(let i=1;i<6;i++) hxCtx2.lineTo(pts[i][0],pts[i][1]);
+      hxCtx2.closePath(); hxCtx2.fillStyle=t.fill; hxCtx2.fill();
+      hxCtx2.strokeStyle='#1a1810'; hxCtx2.lineWidth=1.5; hxCtx2.stroke();
+      drawTerrainIcon(hxCtx2,x,y,grid[hexIdx(col,row)]||'ocean',hxR);
+      if(col===hxHoverC&&row===hxHoverR){
+        hxCtx2.beginPath(); hxCtx2.moveTo(pts[0][0],pts[0][1]);
+        for(let i=1;i<6;i++) hxCtx2.lineTo(pts[i][0],pts[i][1]);
+        hxCtx2.closePath(); hxCtx2.fillStyle='rgba(255,255,255,.22)'; hxCtx2.fill();
+        hxCtx2.strokeStyle='rgba(255,255,255,.8)'; hxCtx2.lineWidth=2; hxCtx2.stroke();
+      }
+    }
+  }
+  // Draw building icons on top
+  if (state.fief && buildingData[state.fief]) {
+    const bmap = buildingData[state.fief];
+    for (const idxStr in bmap) {
+      const bidx = parseInt(idxStr);
+      const bcol = bidx % HEX_COLS, brow = Math.floor(bidx / HEX_COLS);
+      const {x,y} = hxCenter(bcol, brow, hxR);
+      if (x+hxR<0||x-hxR>W||y+hxR<0||y-hxR>H) continue;
+      drawBuildingIcon(hxCtx2, x, y, bmap[idxStr].type, hxR);
+    }
+  }
+  const zl=document.getElementById('zoom-label');
+  if(zl) zl.textContent=Math.round(hexZoom_*100)+'%';
+}
+
+function scheduleHexDraw(){
+  function attempt(n){
+    const c=document.getElementById('hex-canvas');
+    if(c.offsetWidth>0&&c.offsetHeight>0){ drawHexMap(); }
+    else if(n<60) setTimeout(()=>attempt(n+1),16);
+    else{ c.style.cssText='position:absolute;top:0;left:0;bottom:0;width:calc(100% - 200px);height:100%'; drawHexMap(); }
+  }
+  setTimeout(()=>attempt(0),32);
+}
+
+function hexZoom(f){
+  const c=document.getElementById('hex-canvas');
+  const cx=c.offsetWidth/2, cy=c.offsetHeight/2;
+  const prev=fitHexRadius(c.offsetWidth,c.offsetHeight)*hexZoom_;
+  hexZoom_=Math.max(.3,Math.min(8,hexZoom_*f));
+  const next=fitHexRadius(c.offsetWidth,c.offsetHeight)*hexZoom_;
+  const ratio=next/prev;
+  hexPanX_=cx-ratio*(cx-hexPanX_);
+  hexPanY_=cy-ratio*(cy-hexPanY_);
+  drawHexMap();
+}
+function hexResetView(){hexZoom_=1;hexPanX_=0;hexPanY_=0;drawHexMap();}
+
+// Terrain icons
+function drawTerrainIcon(ctx,x,y,terrain,r){
+  ctx.save(); ctx.translate(x,y);
+  const s=r/40;
+  ctx.scale(s,s);
+  switch(terrain){
+    case 'mountain':
+      ctx.fillStyle='#b0b0a0'; ctx.beginPath(); ctx.moveTo(-14,10); ctx.lineTo(0,-18); ctx.lineTo(14,10); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#f0f0f0'; ctx.beginPath(); ctx.moveTo(-5,-2); ctx.lineTo(0,-18); ctx.lineTo(5,-2); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#a0a090'; ctx.beginPath(); ctx.moveTo(6,10); ctx.lineTo(16,-6); ctx.lineTo(24,10); ctx.closePath(); ctx.fill();
+      break;
+    case 'hill':
+      ctx.fillStyle='#b8a86a'; ctx.beginPath(); ctx.ellipse(0,8,18,11,0,Math.PI,0); ctx.closePath(); ctx.fill();
+      break;
+    case 'forest':
+      for(const [tx] of [[-12],[0],[12]]){
+        ctx.fillStyle='#286028'; ctx.beginPath(); ctx.moveTo(tx,8); ctx.lineTo(tx-8,-4); ctx.lineTo(tx+8,-4); ctx.closePath(); ctx.fill();
+        ctx.fillStyle='#3a7a3a'; ctx.beginPath(); ctx.moveTo(tx,2); ctx.lineTo(tx-6,-12); ctx.lineTo(tx+6,-12); ctx.closePath(); ctx.fill();
+      } break;
+    case 'tropical':
+      ctx.fillStyle='#186028';
+      for(const [tx,ty,r2] of [[-9,4,9],[0,-1,12],[9,4,9]]){ctx.beginPath();ctx.arc(tx,ty,r2,0,Math.PI*2);ctx.fill();}
+      break;
+    case 'ocean':
+      ctx.strokeStyle='rgba(200,230,255,.3)'; ctx.lineWidth=1.5;
+      for(const wy of [-8,0,8]){ctx.beginPath();ctx.moveTo(-16,wy);ctx.bezierCurveTo(-8,wy-4,8,wy+4,16,wy);ctx.stroke();}
+      break;
+    case 'coast':
+      ctx.strokeStyle='rgba(200,230,255,.5)'; ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-14,4);ctx.bezierCurveTo(-6,-2,6,10,14,2);ctx.stroke();
+      break;
+    case 'desert':
+      ctx.fillStyle='rgba(210,170,60,.25)';
+      ctx.beginPath();ctx.ellipse(-8,8,14,7,.2,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(8,4,10,5,-.2,0,Math.PI*2);ctx.fill();
+      break;
+    case 'snow':
+      ctx.strokeStyle='rgba(180,210,255,.7)'; ctx.lineWidth=1.5;
+      for(let a=0;a<3;a++){const ang=a*Math.PI/3;ctx.beginPath();ctx.moveTo(Math.cos(ang)*-14,Math.sin(ang)*-14);ctx.lineTo(Math.cos(ang)*14,Math.sin(ang)*14);ctx.stroke();}
+      break;
+    case 'tundra':
+      ctx.strokeStyle='rgba(140,185,185,.45)'; ctx.lineWidth=1.5;
+      for(const ty of [-9,0,9]){ctx.beginPath();ctx.moveTo(-14,ty);ctx.lineTo(14,ty);ctx.stroke();}
+      break;
+    case 'swamp':
+      ctx.fillStyle='#3a5828';
+      for(const [tx,ty] of [[-10,6],[0,2],[10,6]]){ctx.beginPath();ctx.arc(tx,ty-8,4,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2a4018';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx,ty-8);ctx.stroke();}
+      break;
+    case 'wetlands':
+      ctx.fillStyle='rgba(90,130,160,.45)';
+      for(const [wx,wy,wr] of [[-10,6,7],[2,-3,9],[11,7,6]]){ctx.beginPath();ctx.ellipse(wx,wy,wr,wr*.55,0,0,Math.PI*2);ctx.fill();}
+      break;
+    case 'oasis':
+      ctx.fillStyle='#48a878';ctx.beginPath();ctx.arc(0,2,12,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#2a8058';ctx.beginPath();ctx.arc(0,2,7,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#784820';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(0,10);ctx.lineTo(0,-6);ctx.stroke();
+      for(let a=0;a<Math.PI*2;a+=Math.PI/3){ctx.strokeStyle='#3a9a50';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(Math.cos(a)*12,Math.sin(a)*12-6);ctx.stroke();}
+      break;
+    case 'pasture':
+      ctx.fillStyle='rgba(100,180,60,.4)';
+      ctx.beginPath();ctx.ellipse(-8,6,10,6,0,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(7,5,9,5,0,0,Math.PI*2);ctx.fill();
+      break;
+  }
+  ctx.restore();
+}
+
+// Hex canvas input
+let hxPainting=false, hxPanning=false;
+let hxPanSX=0,hxPanSY=0,hxPanOX=0,hxPanOY=0,hxSpace=false;
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const cv=document.getElementById('hex-canvas');
+  cv.addEventListener('wheel',e=>{
+    e.preventDefault(); if(state.layer!==3 && state.layer!==4) return;
+    const rect=cv.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    const f=e.deltaY<0?1.12:.89;
+    const W=cv.offsetWidth,H=cv.offsetHeight;
+    const prev=fitHexRadius(W,H)*hexZoom_;
+    hexZoom_=Math.max(.3,Math.min(8,hexZoom_*f));
+    const next=fitHexRadius(W,H)*hexZoom_;
+    const ratio=next/prev;
+    hexPanX_=mx-ratio*(mx-hexPanX_);
+    hexPanY_=my-ratio*(my-hexPanY_);
+    drawHexMap();
+  },{passive:false});
+  cv.addEventListener('mousedown',e=>{
+    if(e.button===1||hxSpace){hxPanning=true;hxPainting=false;hxPanSX=e.clientX;hxPanSY=e.clientY;hxPanOX=hexPanX_;hxPanOY=hexPanY_;cv.style.cursor='grabbing';e.preventDefault();return;}
+    if(e.button===0){hxPainting=true;paintHex(e);}
+  });
+  cv.addEventListener('mousemove',e=>{
+    if(hxPanning){hexPanX_=hxPanOX+(e.clientX-hxPanSX);hexPanY_=hxPanOY+(e.clientY-hxPanSY);drawHexMap();return;}
+    if(hxPainting){paintHex(e);return;}
+    const rect=cv.getBoundingClientRect();
+    const hit=hxHitTest(e.clientX-rect.left,e.clientY-rect.top);
+    const nc=hit?hit.c:-1, nr=hit?hit.r:-1;
+    if(nc!==hxHoverC||nr!==hxHoverR){
+      hxHoverC=nc;hxHoverR=nr;
+      if(state.layer===3||state.layer===4)drawHexMap();
+    }
+    // Show hex info tooltip with (q,r) coordinates
+    if(hit && (state.layer===3||state.layer===4)){
+      const axial = offsetToAxial(hit.c, hit.r);
+      const terrain = (hexData[state.fief]||[])[hexIdx(hit.c,hit.r)]||'ocean';
+      const tLabel = (TERRAINS[terrain]||{}).label || terrain;
+      const bld = (buildingData[state.fief]||{})[hexIdx(hit.c,hit.r)];
+      const bLabel = bld ? ' | ' + (BUILDINGS[bld.type]||{}).label : '';
+      showTip(e, '(q:'+axial.q+', r:'+axial.r+')', tLabel + bLabel);
+    } else if(!hit){
+      hideTip();
+    }
+  });
+  let _downX=0, _downY=0;
+  cv.addEventListener('mousedown', e=>{ _downX=e.clientX; _downY=e.clientY; });
+  cv.addEventListener('mouseup',e=>{
+    if(e.button===1||hxPanning){hxPanning=false;cv.style.cursor=hxSpace?'grab':'crosshair';}
+    if(e.button===0){
+      hxPainting=false;
+      // Left click: no special action here (building click via right-click)
+    }
+  });
+  cv.addEventListener('mouseleave',()=>{hxPainting=false;hxPanning=false;hxHoverC=-1;hxHoverR=-1;cv.style.cursor='crosshair';if(state.layer===3||state.layer===4)drawHexMap();});
+  // Right-click: enter building interior (layer 4)
+  cv.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if(state.layer!==3) return;
+    const rect=cv.getBoundingClientRect();
+    const hit=hxHitTest(e.clientX-rect.left,e.clientY-rect.top);
+    if(hit) handleBuildingClick(hit);
+  });
+  document.addEventListener('keydown',e=>{if(e.code==='Space'&&(state.layer===3||state.layer===4)&&!e.target.matches('input,textarea,select')){hxSpace=true;document.getElementById('hex-canvas').style.cursor='grab';e.preventDefault();}});
+  document.addEventListener('keyup',e=>{if(e.code==='Space'){hxSpace=false;if(!hxPanning)document.getElementById('hex-canvas').style.cursor='crosshair';}});
+  window.addEventListener('resize',()=>{if(state.layer===3||state.layer===4)drawHexMap();});
+});
+
+function hxHitTest(mx,my){
+  let bestD=Infinity,bestC=-1,bestR=-1;
+  for(let r=0;r<HEX_ROWS;r++){for(let c=0;c<HEX_COLS;c++){const {x,y}=hxCenter(c,r,hxR);const d=Math.hypot(mx-x,my-y);if(d<bestD){bestD=d;bestC=c;bestR=r;}}}
+  return bestD<hxR?{c:bestC,r:bestR}:null;
+}
+
+function paintHex(e){
+  if(!state.fief||hxPanning||hxSpace) return;
+  // Building placement mode
+  if (selectedBuilding !== null) {
+    placeBuildingOnHex(e);
+    return;
+  }
+  const cv=document.getElementById('hex-canvas');
+  const rect=cv.getBoundingClientRect();
+  const hit=hxHitTest(e.clientX-rect.left,e.clientY-rect.top);
+  if(!hit) return;
+  const idx=hexIdx(hit.c,hit.r);
+  if(hexData[state.fief][idx]!==state.selectedTerrain){
+    hexData[state.fief][idx]=state.selectedTerrain;
+    // Keep interiorData in sync (for saves)
+    if(state.layer===4 && interiorData[state.fief]){
+      interiorData[state.fief][idx]=state.selectedTerrain;
+    }
+    drawHexMap();
+  }
+}
+
+// === UI HELPERS ===
+function selectTerrain(btn,type){
+  document.querySelectorAll('.terrain-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.selectedTerrain=type;
+}
+function showTip(e,title,sub){
+  document.getElementById('tt-title').textContent=title;
+  document.getElementById('tt-sub').textContent=sub;
+  const t=document.getElementById('tooltip'); t.style.display='block';
+  t.style.left=(e.clientX+14)+'px'; t.style.top=(e.clientY-10)+'px';
+}
+function moveTip(e){const t=document.getElementById('tooltip');t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-10)+'px';}
+function hideTip(){document.getElementById('tooltip').style.display='none';}
+function showInfo(name,detail,hint){document.getElementById('ip-name').textContent=name;document.getElementById('ip-detail').textContent=detail;document.getElementById('ip-hint').textContent=hint||'';document.getElementById('info-panel').classList.add('visible');}
+function closeInfo(){document.getElementById('info-panel').classList.remove('visible');}
+document.getElementById('map-container').addEventListener('mousemove',moveTip);
+
+// === SPLASH ===
+(function() {
+  function dismissSplash() {
+    const s = document.getElementById('splash');
+    if (!s || s._dismissed) return;
+    s._dismissed = true;
+    s.classList.add('hidden');
+    setTimeout(() => { try { s.remove(); } catch(e){} }, 800);
+  }
+  setTimeout(dismissSplash, 2200);
+  window.addEventListener('click',  dismissSplash, { once: true });
+  window.addEventListener('keydown', dismissSplash, { once: true });
+  setTimeout(() => { const s=document.getElementById('splash'); if(s){s.style.display='none';s.remove();} }, 5000);
+})();
+
+// ===========================================================
+//  SAVE / LOAD  --  world_data.json
+//  Structure:
+//    meta: { version, savedAt, worldName }
+//    kingdoms: { [k_id]: { id, name, color, duchies:{} } }
+//    counties: { [colorKey]: { id, colorKey, r,g,b, name, type,
+//                              kingdomId, duchyId, baronyCount,
+//                              baronies: [ { id, name, index, ... } ] } }
+//    hexmaps:  { [fiefId]: [ terrain, terrain, ... ]  (192 entries) }
+// ===========================================================
+
+function generateId(prefix) {
+  return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+}
+
+// Ensure every province, barony and hexmap has stable IDs before saving
+function ensureIds() {
+  // Counties: use colorKey as stable ID if no explicit id
+  for (const key in provinceMap) {
+    const p = provinceMap[key];
+    if (!p.id) p.id = 'cnd_' + key.replace(/,/g,'x');
+    if (p.baronies) {
+      p.baronies.forEach((b, i) => {
+        if (b && !b.id) b.id = 'brn_' + p.id + '_' + i;
+      });
+    }
+  }
+}
+
+function buildWorldJSON() {
+  ensureIds();
+
+  // Build hierarchy index
+  // kingdoms ? [ county ids ]
+  const kingdomIndex = {};
+  for (const kid in worldKingdoms) {
+    kingdomIndex[kid] = { ...worldKingdoms[kid] };
+    delete kingdomIndex[kid]._rgb; // remove non-serialisable computed field
+    kingdomIndex[kid].counties = [];
+    kingdomIndex[kid].duchies  = { ...worldKingdoms[kid].duchies };
+  }
+
+  // counties ? barony ids
+  const countiesData = {};
+  for (const key in provinceMap) {
+    const p = provinceMap[key];
+    const baroniesClean = (p.baronies || []).map((b, i) => b ? {
+      id:          b.id || ('brn_' + p.id + '_' + i),
+      name:        b.name,
+      index:       i,
+      provinceKey: key,
+      kingdomId:   p.kingdomId,
+      duchyId:     p.duchyId,
+    } : null);
+
+    countiesData[key] = {
+      id:           p.id,
+      colorKey:     key,
+      r: p.r, g: p.g, b: p.b,
+      name:         p.name,
+      type:         p.type,
+      kingdomId:    p.kingdomId,
+      duchyId:      p.duchyId,
+      baronyCount:  p.baronyCount || 4,
+      baronies:     baroniesClean,
+      centroid:     { cx: Math.round(p.cx), cy: Math.round(p.cy) },
+      bbox:         p.bbox,
+      pixelCount:   p.pixels.length,
+    };
+
+    if (p.kingdomId && kingdomIndex[p.kingdomId]) {
+      kingdomIndex[p.kingdomId].counties.push(p.id);
+    }
+  }
+
+  // hexmaps - save as flat array (for render) + axial index (for logic)
+  const hexmapsData = {};
+  for (const fiefId in hexData) {
+    const flat = hexData[fiefId];
+    // Build axial index: "q,r" -> terrain
+    const axialIndex = {};
+    for (let row = 0; row < HEX_ROWS; row++) {
+      for (let col = 0; col < HEX_COLS; col++) {
+        const {q, r} = offsetToAxial(col, row);
+        axialIndex[q + ',' + r] = flat[hexIdx(col, row)] || 'ocean';
+      }
+    }
+    hexmapsData[fiefId] = { tiles: flat, axial: axialIndex };
+  }
+
+  return {
+    meta: {
+      version:   '1.0.0',
+      savedAt:   new Date().toISOString(),
+      worldName: window._worldName || 'REVO World',
+      hexCols:   HEX_COLS,
+      hexRows:   HEX_ROWS,
+      mapSize:   { w: mapImgW, h: mapImgH },
+    },
+    kingdoms:  kingdomIndex,
+    counties:  countiesData,
+    hexmaps:   hexmapsData,
+    buildings: buildingData,
+    interiors: interiorData,
+  };
+}
+
+// Current loaded version
+let currentVersion = null;
+
+async function saveWorldData() {
+  if (Object.keys(provinceMap).length === 0) { showToast('Carregue um mapa primeiro'); return; }
+  if (!window.worldFS) { downloadJSON(); return; }
+  if (!window._worldName) { promptWorldName(); return; }
+  const data = buildWorldJSON();
+  data.meta.worldName = window._worldName;
+  showToast('Salvando...');
+  const r = await window.worldFS.saveVersion(data);
+  if (r.ok) {
+    currentVersion = r.version;
+    showToast('Salvo em: world_data/' + r.version + '/');
+  } else {
+    showToast('Erro: ' + r.error);
+  }
+}
+
+function promptWorldName() {
+  document.getElementById('world-name-input').value = window._worldName || '';
+  document.getElementById('world-name-modal-bg').classList.add('open');
+  setTimeout(() => document.getElementById('world-name-input').focus(), 50);
+}
+function cancelWorldName() { document.getElementById('world-name-modal-bg').classList.remove('open'); }
+async function confirmWorldName() {
+  const name = document.getElementById('world-name-input').value.trim();
+  if (!name) return;
+  document.getElementById('world-name-modal-bg').classList.remove('open');
+  window._worldName = name;
+  saveWorldData();
+}
+
+function downloadJSON() {
+  const data = buildWorldJSON();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'world_data.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('world_data.json baixado');
+}
+
+async function openSaveModal() {
+  document.getElementById('save-modal-bg').classList.add('open');
+  await refreshSaveList();
+}
+function closeSaveModal() { document.getElementById('save-modal-bg').classList.remove('open'); }
+
+async function refreshSaveList() {
+  const body = document.getElementById('save-modal-body');
+  body.innerHTML = '<div class="sm-empty">Carregando...</div>';
+  if (!window.worldFS) { body.innerHTML = '<div class="sm-empty">Apenas no app Electron</div>'; return; }
+  const r = await window.worldFS.listSaves();
+  if (!r.ok || !r.saves || !r.saves.length) {
+    body.innerHTML = '<div class="sm-empty">Nenhum save encontrado</div>';
+    return;
+  }
+  body.innerHTML = '';
+  r.saves.forEach(s => {
+    const isCurrent = s.version === currentVersion;
+    const d   = new Date(s.savedAt);
+    const dt  = isNaN(d.getTime()) ? s.savedAt : d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    const slot = document.createElement('div');
+    slot.className = 'save-slot' + (isCurrent ? ' save-slot-current' : '');
+    slot.innerHTML =
+      '<div class="ss-ver">' + s.version + '</div>' +
+      '<div class="ss-info">' +
+        '<div class="ss-name">' + s.worldName + (isCurrent ? ' <span style="font-size:10px;color:var(--gold-dim)">&#9733; atual</span>' : '') + '</div>' +
+        '<div class="ss-meta">' + dt + ' &nbsp;&middot;&nbsp; ' + s.kingdoms + ' reinos &nbsp;&middot;&nbsp; ' + s.counties + ' condados</div>' +
+      '</div>' +
+      '<div class="ss-actions">' +
+        '<button class="ss-btn-load">Carregar</button>' +
+        '<button class="ss-btn-del">&times;</button>' +
+      '</div>';
+    slot.querySelector('.ss-btn-load').onclick = () => loadVersion(s.version);
+    slot.querySelector('.ss-btn-del').onclick  = (e) => deleteVersion(s.version, e.currentTarget);
+    body.appendChild(slot);
+  });
+}
+
+async function loadVersion(version) {
+  closeSaveModal();
+  showToast('Carregando ' + version + '...');
+  const r = await window.worldFS.loadVersion(version);
+  if (r.ok) {
+    currentVersion    = version;
+    window._worldName = r.data.meta && r.data.meta.worldName ? r.data.meta.worldName : '';
+    restoreWorldData(r.data);
+    showToast('Carregado: ' + version);
+  } else {
+    showToast('Erro: ' + r.error);
+  }
+}
+
+async function deleteVersion(version, btn) {
+  if (!confirm('Apagar world_data/' + version + '/? Esta acao nao pode ser desfeita.')) return;
+  btn.closest('.save-slot').style.opacity = '.3';
+  const r = await window.worldFS.deleteVersion(version);
+  if (r.ok) {
+    if (currentVersion === version) currentVersion = null;
+    await refreshSaveList();
+  } else { showToast('Erro: ' + r.error); }
+}
+
+function saveAsNew() {
+  closeSaveModal();
+  promptWorldName();
+}
+// Keyboard shortcut: Ctrl+S ? save
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    saveWorldData();
+  }
+});
+
+
+// === BUILDINGS ===
+const BUILDINGS = {
+  vila:      { label:'Vila',      color:'#b87830', textColor:'#fff8e0', valid:['plains','pasture','coast','hill'] },
+  castelo:   { label:'Castelo',   color:'#888878', textColor:'#fff',    valid:['plains','hill','mountain'] },
+  mina:      { label:'Mina',      color:'#706860', textColor:'#f0e8d0', valid:['mountain','hill'] },
+  dungeon:   { label:'Dungeon',   color:'#483858', textColor:'#e0c8f0', valid:['mountain','hill','forest','swamp'] },
+  cripta:    { label:'Cripta',    color:'#485060', textColor:'#c8d8e8', valid:null },
+  santuario: { label:'Santuario', color:'#806040', textColor:'#f8e8c0', valid:null },
+};
+
+// buildingData[fiefId][hexIndex] = { type, name, interiorId }
+const buildingData = {};
+
+let selectedBuilding = null; // null = terrain mode, string = building type, '__remove' = eraser
+
+// Interior grids: same as hexData but keyed by interiorId
+// interiorId = fiefId + '_bld' + hexIndex
+const interiorData = {};
+const BLD_COLS = 16, BLD_ROWS = 12;
+
+function getBldGrid(intId) {
+  if (!interiorData[intId]) interiorData[intId] = new Array(BLD_COLS * BLD_ROWS).fill('plains');
+  // Also register in hexData so drawHexMap can read it
+  hexData[intId] = interiorData[intId];
+  return interiorData[intId];
+}
+
+function bldIdx(c,r){ return r*BLD_COLS+c; }
+
+// Valid terrains check
+function buildingValidForTerrain(btype, terrain) {
+  const b = BUILDINGS[btype];
+  if (!b) return false;
+  if (!b.valid) return true; // any terrain
+  return b.valid.includes(terrain);
+}
+
+// Panel tab switch
+function switchPanelTab(tab) {
+  // In layer 4 (interior), only terrain painting is allowed
+  if (state.layer === 4 && tab === 'buildings') return;
+  document.querySelectorAll('.panel-tab').forEach((t,i)=>t.classList.toggle('active', (tab==='terrain'&&i===0)||(tab==='buildings'&&i===1)));
+  document.getElementById('tab-terrain').classList.toggle('active', tab==='terrain');
+  document.getElementById('tab-buildings').classList.toggle('active', tab==='buildings');
+  if (tab === 'terrain') selectedBuilding = null;
+  updateBuildingButtons();
+}
+
+function selectBuilding(btn, btype) {
+  selectedBuilding = btype;
+  document.querySelectorAll('.building-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function updateBuildingButtons() {
+  if (!state.fief) return;
+  // No per-button disabling needed - validation happens on click
+}
+
+// Draw building icon on a hex
+function drawBuildingIcon(ctx, x, y, btype, r) {
+  const b = BUILDINGS[btype]; if (!b) return;
+  ctx.save();
+  const s = r * 0.55;
+  // Background circle
+  ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI*2);
+  ctx.fillStyle = b.color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+  // Letter label
+  ctx.fillStyle = b.textColor;
+  ctx.font = 'bold ' + Math.round(s*1.1) + 'px Cinzel,serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(b.label[0], x, y+1);
+  // Pulsing ring for hover handled via redraw
+  ctx.restore();
+}
+
+// Buildings are drawn inside drawHexMap directly (see below)
+
+// paintHex handles buildings via selectedBuilding check (integrated below)
+
+function placeBuildingOnHex(e) {
+  if (!state.fief || hxPanning || hxSpace) return;
+  const cv = document.getElementById('hex-canvas');
+  const rect = cv.getBoundingClientRect();
+  const hit = hxHitTest(e.clientX-rect.left, e.clientY-rect.top);
+  if (!hit) return;
+  const idx = hexIdx(hit.c, hit.r);
+  const terrain = (hexData[state.fief]||[])[idx] || 'ocean';
+
+  if (selectedBuilding === '__remove') {
+    if (buildingData[state.fief]) delete buildingData[state.fief][idx];
+    drawHexMap(); return;
+  }
+
+  if (!buildingValidForTerrain(selectedBuilding, terrain)) {
+    // Flash invalid feedback - show tooltip
+    const b = BUILDINGS[selectedBuilding];
+    showBldTooltip(e, b.label + ' invalido neste terreno!', true);
+    return;
+  }
+
+  if (!buildingData[state.fief]) buildingData[state.fief] = {};
+  const existing = buildingData[state.fief][idx];
+  if (existing && existing.type === selectedBuilding) {
+    // Already placed - open interior on click (single click on existing building)
+    return;
+  }
+
+  const intId = state.fief + '_bld' + idx;
+  buildingData[state.fief][idx] = { type: selectedBuilding, name: BUILDINGS[selectedBuilding].label, interiorId: intId };
+  getBldGrid(intId); // initialize interior
+  drawHexMap();
+}
+
+// Click (not drag) on existing building opens Layer 4
+function handleBuildingClick(hit) {
+  if (!state.fief || !buildingData[state.fief]) return false;
+  const idx = hexIdx(hit.c, hit.r);
+  const bld = buildingData[state.fief][idx];
+  if (!bld) return false;
+
+  if (selectedBuilding !== null && selectedBuilding !== '__remove') return false; // placing mode
+
+  // Enter layer 4
+  enterInterior(idx, bld);
+  return true;
+}
+
+// Building tooltip
+let _bldTipTimer = null;
+function showBldTooltip(e, msg, isError) {
+  const t = document.getElementById('bld-tooltip');
+  t.textContent = msg;
+  t.style.display = 'block';
+  t.style.left = (e.clientX+14)+'px';
+  t.style.top  = (e.clientY-10)+'px';
+  t.style.borderColor = isError ? '#c84040' : '#8848a8';
+  t.style.color       = isError ? '#e08080' : '#c87ae8';
+  clearTimeout(_bldTipTimer);
+  _bldTipTimer = setTimeout(()=>{ t.style.display='none'; }, 2000);
+}
+
+// === LAYER 4: INTERIOR ===
+let currentInteriorIdx = null;
+let currentInteriorFief = null;
+const HEX_COLS_BLD = 16, HEX_ROWS_BLD = 12;
+
+function enterInterior(hexIndex, bld) {
+  currentInteriorIdx  = hexIndex;
+  currentInteriorFief = state.fief;
+
+  state.layer = 4;
+  const bname = bld.name || BUILDINGS[bld.type]?.label || 'Interior';
+  state.history.push({ name: bname });
+  updateHeader();
+
+  // Show name in buildings panel, switch to terrain tab
+  const nameEl = document.getElementById('layer4-name');
+  if (nameEl) { nameEl.textContent = bname; nameEl.style.display='block'; }
+  switchPanelTab('terrain');
+
+  // Initialize interior grid - also registers in hexData[interiorId]
+  getBldGrid(bld.interiorId);
+
+  // Set fief to interiorId - drawHexMap reads hexData[state.fief]
+  state.fief = bld.interiorId;
+  hexZoom_ = 1; hexPanX_ = 0; hexPanY_ = 0;
+  scheduleHexDrawInterior();
+}
+
+function exitInterior() {
+  if (state.layer !== 4) return;
+  state.fief  = currentInteriorFief;
+  state.layer = 3;
+  currentInteriorIdx  = null;
+  currentInteriorFief = null;
+  const nameEl = document.getElementById('layer4-name');
+  if (nameEl) nameEl.style.display='none';
+  state.history.pop();
+  updateHeader();
+  hexZoom_ = 1; hexPanX_ = 0; hexPanY_ = 0;
+  scheduleHexDraw();
+}
+
+function scheduleHexDrawInterior() {
+  // state.fief is already set to interiorId in enterInterior()
+  // hexData[state.fief] was initialized by getBldGrid() - draw it directly
+  // BLD_COLS == HEX_COLS and BLD_ROWS == HEX_ROWS (both 16x12), so grid maps 1:1
+  scheduleHexDraw();
+}
+
+// goBack handles layer 4 via state.layer check (integrated below)
+
+// Building click detection integrated into main mouseup handler above
+
+// buildWorldJSON and restoreWorldData extended inline (see those functions)
+
+// === Input Modal (replaces prompt/alert - not supported in Electron)
+let _inputModalCb = null;
+let _inputModalAlertOnly = false;
+
+function showInputModal(title, placeholder, callback, alertOnly) {
+  _inputModalCb        = callback || null;
+  _inputModalAlertOnly = !!alertOnly;
+  document.getElementById('input-modal-title').textContent = title;
+  const field = document.getElementById('input-modal-field');
+  field.placeholder = placeholder || '';
+  field.value = '';
+  field.style.display = alertOnly ? 'none' : 'block';
+  document.getElementById('input-modal-ok').textContent = alertOnly ? 'OK' : 'Confirmar';
+  document.getElementById('input-modal-bg').classList.add('open');
+  if (!alertOnly) setTimeout(() => field.focus(), 50);
+  field.onkeydown = (e) => { if (e.key === 'Enter') inputModalConfirm(); };
+}
+
+function inputModalConfirm() {
+  const val = document.getElementById('input-modal-field').value.trim();
+  document.getElementById('input-modal-bg').classList.remove('open');
+  if (!_inputModalAlertOnly && _inputModalCb && val) _inputModalCb(val);
+  _inputModalCb = null;
+}
+
+function inputModalCancel() {
+  document.getElementById('input-modal-bg').classList.remove('open');
+  _inputModalCb = null;
+}
+
+// === Debug eval handler ===
+// Preload dispara CustomEvent '__debug_run', pagina executa e responde via __debugSend
+window.addEventListener('__debug_run', function(e) {
+  var id   = e.detail.id;
+  var code = e.detail.code;
+  var result;
+  try {
+    var __r = eval(code); // escopo completo da pagina
+    if (__r === undefined)            result = 'undefined';
+    else if (__r === null)            result = 'null';
+    else if (typeof __r === 'object') result = JSON.stringify(__r, null, 2);
+    else                              result = String(__r);
+  } catch(err) {
+    result = 'ERROR: ' + err.message;
+  }
+  if (typeof window.__debugSend === 'function') {
+    window.__debugSend(id, result);
+  }
+});
+
+// === Init
+updateHeader();
+
+// === Expoe funcoes no window para acesso pelo debug console ===
+window.offsetToAxial       = offsetToAxial;
+window.axialToOffset       = axialToOffset;
+window.hexNeighbors        = hexNeighbors;
+window.hexNeighborsInGrid  = hexNeighborsInGrid;
+window.hexDistance         = hexDistance;
+window.getHexData          = getHexData;
+window.exportGridAxial     = exportGridAxial;
+window.getHexByAxial       = getHexByAxial;
+window.getNeighborTerrains = getNeighborTerrains;
+window.hexData             = hexData;
+window.buildingData        = buildingData;
+window.interiorData        = interiorData;
+window.provinceMap         = provinceMap;
+window.worldKingdoms       = worldKingdoms;
+window.state               = state;
+window.TERRAINS            = TERRAINS;
+window.BUILDINGS           = BUILDINGS;
+window.HEX_COLS            = HEX_COLS;
+window.HEX_ROWS            = HEX_ROWS;
+window.hexIdx              = hexIdx;
+</script>
+
+<!-- Save Manager Modal -->
+<div id="save-modal-bg">
+  <div id="save-modal">
+    <div class="sm-header">
+      <span style="font-size:20px">🗂</span>
+      <h3>Saves do Mundo</h3>
+      <button class="ip-close" onclick="closeSaveModal()">✕</button>
+    </div>
+    <div class="sm-body" id="save-modal-body">
+      <div class="sm-empty">Nenhum save encontrado</div>
+    </div>
+    <div class="sm-footer">
+      <button class="btn-load" onclick="closeSaveModal()">Fechar</button>
+      <button class="btn-save" onclick="saveAsNew()">+ Novo save</button>
+    </div>
+  </div>
+</div>
+
+<!-- World Name Modal (first save) -->
+<div id="world-name-modal-bg">
+  <div id="world-name-modal">
+    <h3>Nome do Mundo</h3>
+    <input type="text" id="world-name-input" placeholder="Ex: Ashland Chronicles" maxlength="40">
+    <div class="wn-actions">
+      <button class="btn-load" onclick="cancelWorldName()">Cancelar</button>
+      <button class="btn-save" onclick="confirmWorldName()">Salvar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic input modal -->
+<div id="input-modal-bg">
+  <div id="input-modal">
+    <h3 id="input-modal-title">Nome</h3>
+    <input type="text" id="input-modal-field" maxlength="60" placeholder="">
+    <div class="im-actions">
+      <button class="btn-load" onclick="inputModalCancel()">Cancelar</button>
+      <button class="btn-save" id="input-modal-ok" onclick="inputModalConfirm()">OK</button>
+    </div>
+  </div>
+</div>
+<div class="bld-tooltip" id="bld-tooltip"></div>
+</body>
+</html>

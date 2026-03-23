@@ -1,0 +1,16 @@
+{
+  "name": "revo-world-builder",
+  "version": "0.1.0",
+  "description": "REVO World Builder™ — AR Softworks™",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev":   "electron . --dev"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "author": "AR Softworks™",
+  "license": "UNLICENSED"
+}

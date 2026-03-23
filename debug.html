@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>REVO Debug Console</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #0a0a0a;
+    color: #00ff41;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #toolbar {
+    background: #111;
+    border-bottom: 1px solid #00ff41;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #toolbar span {
+    color: #00ff41;
+    font-size: 11px;
+    letter-spacing: 1px;
+    flex: 1;
+  }
+  button {
+    background: #0a0a0a;
+    border: 1px solid #00ff41;
+    color: #00ff41;
+    padding: 2px 10px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+  }
+  button:hover { background: #001a00; }
+  #output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .line { white-space: pre-wrap; word-break: break-all; line-height: 1.5; }
+  .line.err  { color: #ff4040; }
+  .line.warn { color: #ffa040; }
+  .line.info { color: #40d0ff; }
+  .line.log  { color: #00ff41; }
+  .line .ts  { color: #006620; margin-right: 6px; }
+  #input-row {
+    border-top: 1px solid #00ff41;
+    display: flex;
+    padding: 4px 8px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  #cmd-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #00ff41;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    outline: none;
+  }
+  #cmd-prompt { color: #006620; }
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <span>&#9670; REVO WORLD BUILDER - DEBUG CONSOLE</span>
+  <button onclick="clearLog()">CLEAR</button>
+</div>
+<div id="output"></div>
+<div id="input-row">
+  <span id="cmd-prompt">&gt;&nbsp;</span>
+  <input type="text" id="cmd-input" placeholder="Digite um comando JS..." autocomplete="off">
+</div>
+<script>
+  const output = document.getElementById('output');
+
+  function ts() {
+    const d = new Date();
+    return d.toTimeString().substring(0,8) + '.' + String(d.getMilliseconds()).padStart(3,'0');
+  }
+
+  function addLine(msg, type) {
+    const d = document.createElement('div');
+    d.className = 'line ' + (type||'log');
+    const t = document.createElement('span');
+    t.className = 'ts';
+    t.textContent = '[' + ts() + ']';
+    d.appendChild(t);
+    d.appendChild(document.createTextNode(msg));
+    output.appendChild(d);
+    output.scrollTop = output.scrollHeight;
+    // Keep last 500 lines
+    while (output.children.length > 500) output.removeChild(output.firstChild);
+  }
+
+  function clearLog() { output.innerHTML = ''; addLine('Console limpo.', 'info'); }
+
+  // Receive messages from main window via ipcRenderer
+  if (window.debugBridge) {
+    window.debugBridge.onMessage((type, msg) => {
+      addLine(msg, type);
+    });
+  }
+
+  // JS command input
+  document.getElementById('cmd-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const cmd = e.target.value.trim();
+      if (!cmd) return;
+      addLine('> ' + cmd, 'info');
+      e.target.value = '';
+      if (window.debugBridge) {
+        window.debugBridge.evalInMain(cmd).then(result => {
+          const str = String(result);
+          if (str.startsWith('ERROR:')) {
+            addLine(str, 'err');
+          } else {
+            // Try to pretty-print JSON
+            try {
+              const parsed = JSON.parse(str);
+              const pretty = JSON.stringify(parsed, null, 2);
+              // If multiline, show each line
+              if (pretty.includes('\n')) {
+                pretty.split('\n').forEach(line => addLine(line, 'log'));
+              } else {
+                addLine(str, 'log');
+              }
+            } catch(e) {
+              addLine(str, 'log');
+            }
+          }
+        });
+      }
+    }
+  });
+
+  addLine('Console iniciado. F12 para fechar.', 'info');
+  addLine('Comandos executam no renderer (acesso a todas as funcoes do app).', 'info');
+</script>
+</body>
+</html>
