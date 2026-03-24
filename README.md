@@ -13,11 +13,6 @@ Perfeito! Vamos criar uma versão **visualmente atraente e moderna** do seu READ
 
 ---
 
-## 🎨 Demo
-
-![REVO Demo](https://user-images.githubusercontent.com/12345678/demo.gif)  
-*Clique para ver o GIF em ação: camadas de reinos, barônias e hexágonos interativos!*
-
 **Slogan:**  
 > “Construa mundos feudalmente ricos, do mapa mundi ao menor hexágono, de forma intuitiva e elegante.”
 
