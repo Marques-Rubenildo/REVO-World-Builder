@@ -141,13 +141,6 @@ getHexData(fiefId, col, row)
 
 ---
 
-*REVO World Builder™ — AR Softworks™ — Alpha v0.1.0*
-
----
-
-⚡ **Extras Visuais que você pode adicionar depois:**  
-1. GIF animado mostrando o fluxo do mapa → barônias → hexágonos.  
-2. Badge “Build passing” quando tiver CI/CD.  
-3. Ícones coloridos para cada seção (`🎯`, `🗺`, `💾`, `🛠`).  
+*REVO World Builder™ — AR Softworks™ — Alpha v0.3.0*
 
 ---
