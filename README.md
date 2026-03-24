@@ -13,7 +13,7 @@ Perfeito! Vamos criar uma versão **visualmente atraente e moderna** do seu READ
 
 ---
 
-## 🎨 Branding & Demo
+## 🎨 Demo
 
 ![REVO Demo](https://user-images.githubusercontent.com/12345678/demo.gif)  
 *Clique para ver o GIF em ação: camadas de reinos, barônias e hexágonos interativos!*
@@ -147,9 +147,6 @@ getHexData(fiefId, col, row)
 ---
 
 *REVO World Builder™ — AR Softworks™ — Alpha v0.1.0*
-*Desenvolvido iterativamente com suporte de IA para prototipagem rápida*
-
-```
 
 ---
 
