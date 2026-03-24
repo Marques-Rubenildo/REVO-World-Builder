@@ -141,6 +141,6 @@ getHexData(fiefId, col, row)
 
 ---
 
-*REVO World Builder™ — AR Softworks™ — Alpha v0.3.0*
+*REVO World Builder™ — AR Softworks™ — Alpha v0.1.0*
 
 ---
