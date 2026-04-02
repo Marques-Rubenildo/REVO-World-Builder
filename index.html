@@ -355,6 +355,7 @@ svg.world-map{width:100%;height:100%}
       <span id="zoom-label">100%</span>
       <button class="zoom-btn" onclick="hexZoom(0.8)">−</button>
       <button class="zoom-btn" onclick="hexResetView()" style="font-size:11px;">⌂</button>
+      <button id="btn-edge-debug" class="zoom-btn" onclick="toggleEdgeDebug()" style="font-size:10px;width:auto;padding:0 8px;letter-spacing:.5px;" title="Debug de bordas de transicao">Bordas OFF</button>
     </div>
   </div>
 
@@ -589,6 +590,110 @@ function getNeighborTerrains(fiefId, col, row) {
   });
 }
 // ===========================================================
+
+
+// == SISTEMA DE MASCARA DE BORDAS (Edge Mask) ==========================
+//
+// Direcoes em ordem horaria a partir do Norte (pointy-top odd-r):
+//   N  = (q,   r-1)  [0]
+//   NE = (q+1, r-1)  [1]
+//   SE = (q+1, r  )  [2]
+//   S  = (q,   r+1)  [3]
+//   SW = (q-1, r+1)  [4]
+//   NW = (q-1, r  )  [5]
+//
+// Saida: [1,1,0,0,0,0]
+//   1 = vizinho diferente => precisa de transicao
+//   0 = vizinho igual     => sem transicao
+//   Fora do grid = borda externa = 1
+
+const EDGE_DIRECTIONS = [
+  { q:  0, r: -1 }, // 0 N
+  { q: +1, r: -1 }, // 1 NE
+  { q: +1, r:  0 }, // 2 SE
+  { q:  0, r: +1 }, // 3 S
+  { q: -1, r: +1 }, // 4 SW
+  { q: -1, r:  0 }, // 5 NW
+];
+
+function getEdgeMask(fiefId, col, row) {
+  const self = getHexData(fiefId, col, row);
+  if (!self) return [0, 0, 0, 0, 0, 0];
+  const { q, r } = self;
+  const grid = hexData[fiefId];
+  return EDGE_DIRECTIONS.map(d => {
+    const nq = q + d.q, nr = r + d.r;
+    const nOff = axialToOffset(nq, nr);
+    if (nOff.col < 0 || nOff.col >= HEX_COLS ||
+        nOff.row < 0 || nOff.row >= HEX_ROWS) {
+      return 1;
+    }
+    const nTerrain = (grid || [])[hexIdx(nOff.col, nOff.row)] || 'ocean';
+    return nTerrain !== self.tipo_base ? 1 : 0;
+  });
+}
+
+// Descricao textual do padrao de bordas
+function edgeMaskPattern(mask) {
+  const count = mask.reduce((s, v) => s + v, 0);
+  if (count === 0) return 'iso';
+  if (count === 6) return 'ilha';
+  if (count === 1) return '1borda';
+  if (count === 2) {
+    for (let i = 0; i < 6; i++) {
+      if (mask[i]===1 && mask[(i+1)%6]===1) return 'canto';
+    }
+    return 'oposto';
+  }
+  if (count === 3) {
+    for (let i = 0; i < 6; i++) {
+      if (mask[i]===1 && mask[(i+1)%6]===1 && mask[(i+2)%6]===1) return 'curva';
+    }
+    return 'spread';
+  }
+  return 'c' + count;
+}
+
+// Toggle debug visual via botao
+let edgeDebugMode = false;
+function toggleEdgeDebug() {
+  edgeDebugMode = !edgeDebugMode;
+  const btn = document.getElementById('btn-edge-debug');
+  if (btn) {
+    btn.textContent   = edgeDebugMode ? 'Bordas ON' : 'Bordas OFF';
+    btn.style.borderColor = edgeDebugMode ? '#c84040' : '';
+    btn.style.color       = edgeDebugMode ? '#e86060' : '';
+  }
+  drawHexMap();
+}
+
+// Desenha bordas de transicao sobre hex ja renderizado
+function drawEdgeMask(ctx, pts, mask, r) {
+  for (let i = 0; i < 6; i++) {
+    if (mask[i] !== 1) continue;
+    const p1 = pts[i], p2 = pts[(i+1)%6];
+    ctx.beginPath();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.strokeStyle = 'rgba(220,50,50,0.92)';
+    ctx.lineWidth   = Math.max(2.5, r * 0.13);
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+  }
+  const count = mask.reduce((s,v)=>s+v,0);
+  if (count > 0) {
+    const cx = pts.reduce((s,p)=>s+p[0],0)/6;
+    const cy = pts.reduce((s,p)=>s+p[1],0)/6;
+    const fs = Math.max(8, Math.round(r*0.30));
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.beginPath(); ctx.arc(cx, cy, r*0.30, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff9090';
+    ctx.font = 'bold '+fs+'px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(count, cx, cy);
+  }
+}
+// == FIM EDGE MASK ======================================================
 
 
 // === TERRAINS ===
@@ -995,6 +1100,11 @@ function drawHexMap(){
       hxCtx2.closePath(); hxCtx2.fillStyle=t.fill; hxCtx2.fill();
       hxCtx2.strokeStyle='#1a1810'; hxCtx2.lineWidth=1.5; hxCtx2.stroke();
       drawTerrainIcon(hxCtx2,x,y,grid[hexIdx(col,row)]||'ocean',hxR);
+      // Edge debug overlay
+      if (edgeDebugMode && state.fief) {
+        const mask = getEdgeMask(state.fief, col, row);
+        drawEdgeMask(hxCtx2, pts, mask, hxR);
+      }
       if(col===hxHoverC&&row===hxHoverR){
         hxCtx2.beginPath(); hxCtx2.moveTo(pts[0][0],pts[0][1]);
         for(let i=1;i<6;i++) hxCtx2.lineTo(pts[i][0],pts[i][1]);
@@ -1725,6 +1835,10 @@ window.getHexData          = getHexData;
 window.exportGridAxial     = exportGridAxial;
 window.getHexByAxial       = getHexByAxial;
 window.getNeighborTerrains = getNeighborTerrains;
+window.getEdgeMask         = getEdgeMask;
+window.edgeMaskPattern     = edgeMaskPattern;
+window.EDGE_DIRECTIONS     = EDGE_DIRECTIONS;
+window.toggleEdgeDebug     = toggleEdgeDebug;
 window.hexData             = hexData;
 window.buildingData        = buildingData;
 window.interiorData        = interiorData;
